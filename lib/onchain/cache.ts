@@ -45,7 +45,9 @@ class OnChainCache {
     // Clean up old entries if cache is too large
     if (this.memoryCache.size >= this.MAX_CACHE_SIZE) {
       const firstKey = this.memoryCache.keys().next().value;
-      this.memoryCache.delete(firstKey);
+      if (firstKey) {
+        this.memoryCache.delete(firstKey);
+      }
     }
 
     const entry: CacheEntry<T> = {
