@@ -47,7 +47,7 @@ class ConnectionManager {
       return this.connections.get(key)!;
     }
 
-    const connection = new Connection(endpoint, commitment, {
+    const connection = new Connection(endpoint, {
       commitment,
       confirmTransactionInitialTimeout: 60000,
       fetch: (url, options) => {
