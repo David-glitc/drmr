@@ -106,21 +106,22 @@ export default function DashboardLayout({
 
       <nav className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-slate-950/80 px-3 py-2 backdrop-blur sm:px-6">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2">
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img 
-              src="/logo.jpg" 
-              alt="DRMR Logo" 
-              className="h-8 w-8 rounded-full object-cover border border-rose-500/30"
-            />
-            <div>
-              <p className="text-[9px] uppercase tracking-[0.4em] text-rose-300">
-                DRMR
-              </p>
-              <p className="text-sm font-semibold text-white sm:text-base">
-                American Dream Dashboard
-              </p>
-            </div>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <img 
+                src="/logo.jpg" 
+                alt="DRMR Logo" 
+                className="h-8 w-8 rounded-full object-cover border border-rose-500/30"
+              />
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.4em] text-rose-300">
+                  DRMR
+                </p>
+                <p className="text-sm font-semibold text-white sm:text-base">
+                  American Dream Dashboard
+                </p>
+              </div>
+            </Link>
             <details className="lg:hidden">
               <summary className="rounded-full border border-white/15 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.3em] text-white">
                 Menu
