@@ -8,6 +8,8 @@ import { stakingService } from "./services";
 const initialPool = stakingService.getPoolConfig("SOL");
 const initialRewards = stakingService.estimateRewards("SOL", 0);
 
+// Legacy atoms - kept for backward compatibility
+// New code should use lib/state/atoms.ts
 export const walletAddressAtom = atom<string | null>(null);
 export const walletStatusAtom = atom<WalletStatus>("disconnected");
 

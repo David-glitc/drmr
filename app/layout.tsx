@@ -16,7 +16,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DRMR Staking Dashboard",
   description:
-    "Track DRMR & SOL staking performance, monthly burns, and portfolio health in one modern workspace.",
+"Track DRMR & SOL staking performance, monthly burns, and portfolio health in one modern workspace.",  
+icons: {
+    icon: "/logo.jpg",
+    shortcut: "/logo.jpg",
+    apple: "/logo.jpg",
+  },
 };
 
 export default function RootLayout({

@@ -1,28 +1,50 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base Colors */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --bg-card: rgba(15, 23, 42, 0.8);
+  --bg-card-hover: rgba(15, 23, 42, 0.9);
+  
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --text-muted: #64748b;
+  
+  /* Accent Colors */
+  --accent-primary: #38bdf8;
+  --accent-secondary: #f43f5e;
+  --accent-hover: #0ea5e9;
+  
+  /* Button Colors */
+  --btn-primary: #ef4444;
+  --btn-primary-hover: #dc2626;
+  --btn-secondary: rgba(255, 255, 255, 0.1);
+  --btn-secondary-hover: rgba(255, 255, 255, 0.2);
+  
+  /* Border Colors */
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --border-secondary: rgba(255, 255, 255, 0.05);
+  
+  /* Background Gradient */
+  --bg-gradient-start: #0b1225;
+  --bg-gradient-end: #020617;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: radial-gradient(circle at top, #0b1225, #020617) fixed,
+  background: radial-gradient(circle at top, var(--bg-gradient-start), var(--bg-gradient-end)) fixed,
     linear-gradient(120deg, rgba(239, 68, 68, 0.08), rgba(56, 189, 248, 0.08));
-  color: var(--foreground);
+  color: var(--text-primary);
   font-family: var(--font-geist-sans), "Inter", system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
   min-height: 100vh;

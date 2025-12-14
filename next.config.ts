@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Normal Next.js config - no special webpack/turbopack needed
 };
 
 export default nextConfig;

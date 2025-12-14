@@ -7,20 +7,16 @@ import {
   WalletProvider,
 } from "@solana/wallet-adapter-react";
 import {
-
   PhantomWalletAdapter,
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 
 import "@solana/wallet-adapter-react-ui/styles.css";
-
-const endpoint =
-  process.env.SOLANA_RPC ??
-  process.env.NEXT_PUBLIC_SOLANA_RPC ??
-  clusterApiUrl("devnet");
+import { getSolanaEndpoint } from "../lib/solana-client";
 
 export function WalletAdapterProvider({ children }: { children: ReactNode }) {
+  const endpoint = useMemo(() => getSolanaEndpoint(), []);
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
@@ -37,5 +33,6 @@ export function WalletAdapterProvider({ children }: { children: ReactNode }) {
     </ConnectionProvider>
   );
 }
+
 
 

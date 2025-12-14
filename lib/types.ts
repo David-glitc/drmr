@@ -11,7 +11,12 @@ export interface TokenHolding {
 
 export interface NftHolding {
   name: string;
-  floor: string;
+  floor?: string;
+  mint: string;
+  image: string;
+  description?: string;
+  explorerLink?: string;
+  collection?: string;
 }
 
 export interface ActivityItem {

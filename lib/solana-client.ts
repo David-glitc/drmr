@@ -1,20 +1,28 @@
 "use client";
 
-import { Connection, clusterApiUrl } from "@solana/web3.js";
+import { clusterApiUrl } from "@solana/web3.js";
+import { connectionManager } from "./connection-manager";
 
-let cachedConnection: Connection | null = null;
-
+/**
+ * Legacy function - now uses ConnectionManager
+ * @deprecated Use connectionManager.getConnection() directly
+ */
 export function getSolanaConnection() {
-  if (cachedConnection) {
-    return cachedConnection;
-  }
+  return connectionManager.getDefaultConnection();
+}
 
-  const endpoint =
+/**
+ * Get Solana RPC endpoint
+ * Note: This is now reactive via the networkAtom in the provider
+ */
+export function getSolanaEndpoint(network?: "mainnet-beta" | "devnet" | "testnet") {
+  if (network) {
+    return clusterApiUrl(network);
+  }
+  return (
     process.env.SOLANA_RPC ??
     process.env.NEXT_PUBLIC_SOLANA_RPC ??
-    clusterApiUrl("devnet");
-
-  cachedConnection = new Connection(endpoint, "confirmed");
-  return cachedConnection;
+    clusterApiUrl("devnet")
+  );
 }
 

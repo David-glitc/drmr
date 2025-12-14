@@ -7,10 +7,12 @@ import type { ReactNode } from "react";
 import { navItems, settingsNav } from "../../lib/nav";
 import { useWallet } from "../../hooks/useWallet";
 import { useSolanaAccount } from "../../hooks/useSolanaAccount";
+import { useSolPrice } from "../../hooks/useSolPrice";
+import { LoadingOverlay } from "../../components/LoadingOverlay";
 
-const iconMap: Record<string, JSX.Element> = {
+const iconMap: Record<string, React.ReactElement> = {
   chart: (
-    <svg viewBox="0 0 24 24" className="h-4 w-4 text-sky-300" fill="none">
+    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
       <path
         d="M5 17V11M10 17V7M15 17V13M20 17V5"
         stroke="currentColor"
@@ -21,7 +23,7 @@ const iconMap: Record<string, JSX.Element> = {
     </svg>
   ),
   diamond: (
-    <svg viewBox="0 0 24 24" className="h-4 w-4 text-sky-300" fill="none">
+    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
       <path
         d="M12 3l7 7-7 11-7-11 7-7z"
         stroke="currentColor"
@@ -31,7 +33,7 @@ const iconMap: Record<string, JSX.Element> = {
     </svg>
   ),
   arrows: (
-    <svg viewBox="0 0 24 24" className="h-4 w-4 text-sky-300" fill="none">
+    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
       <path
         d="M7 7h10l-3-3m3 13H7l3 3"
         stroke="currentColor"
@@ -42,7 +44,7 @@ const iconMap: Record<string, JSX.Element> = {
     </svg>
   ),
   coin: (
-    <svg viewBox="0 0 24 24" className="h-4 w-4 text-sky-300" fill="none">
+    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
       <ellipse cx="12" cy="6" rx="8" ry="3" stroke="currentColor" strokeWidth="2" />
       <path
         d="M4 6v8c0 1.66 3.58 3 8 3s8-1.34 8-3V6"
@@ -63,7 +65,7 @@ const iconMap: Record<string, JSX.Element> = {
     </svg>
   ),
   gear: (
-    <svg viewBox="0 0 24 24" className="h-4 w-4 text-sky-300" fill="none">
+    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
       <path
         d="M12 15a3 3 0 100-6 3 3 0 000 6z"
         stroke="currentColor"
@@ -86,42 +88,42 @@ export default function DashboardLayout({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const { walletAddress, isConnected, walletStatus, connect, disconnect } =
+  const { walletAddress, isConnected, isConnecting, walletStatus, connect, disconnect } =
     useWallet();
   const { data: solanaAccount, isLoading: solanaLoading } = useSolanaAccount(
     walletAddress ?? null
   );
-  const isConnecting = walletStatus === "connecting";
+  const { data: solPrice } = useSolPrice();
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
-      <div className="pointer-events-none absolute inset-0 opacity-80">
-        <div className="absolute -left-16 top-10 h-80 w-80 rounded-full bg-rose-500/25 blur-[140px]" />
-        <div className="absolute right-0 top-1/4 h-104 w-104 rounded-full bg-sky-500/20 blur-[150px]" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-white/5 to-transparent" />
-      </div>
+    <div className="relative min-h-screen bg-slate-950 text-white">
+      {/* Loading Overlay for Wallet Connection */}
+      <LoadingOverlay 
+        show={isConnecting} 
+        message="Connecting Wallet..."
+      />
 
-      <nav className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-slate-950/80 px-4 py-3 backdrop-blur sm:px-8">
-        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+      <nav className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-slate-950/80 px-3 py-2 backdrop-blur sm:px-6">
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.45em] text-rose-300">
+              <p className="text-[9px] uppercase tracking-[0.4em] text-rose-300">
               DRMR
             </p>
-            <p className="text-base font-semibold text-white sm:text-lg">
+            <p className="text-sm font-semibold text-white sm:text-base">
               American Dream Dashboard
             </p>
           </div>
             <details className="lg:hidden">
-              <summary className="rounded-full border border-white/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-white">
+              <summary className="rounded-full border border-white/15 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.3em] text-white">
                 Menu
               </summary>
-              <div className="mt-2 w-48 rounded-2xl border border-white/10 bg-slate-900/95 p-3 text-xs text-white shadow-xl">
+              <div className="mt-2 w-44 rounded-xl border border-white/10 bg-slate-900/95 p-2.5 text-[11px] text-white shadow-xl">
                 {navItems.map((item) => (
                   <Link
                     key={item.key}
                     href={item.href}
-                    className={`flex items-center gap-2 rounded-xl px-3 py-2 transition ${
+                    className={`flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 transition ${
                       pathname === item.href
                         ? "bg-white/10 text-white"
                         : "text-slate-200 hover:bg-white/5"
@@ -133,7 +135,7 @@ export default function DashboardLayout({
                 ))}
                 <Link
                   href={settingsNav.href}
-                  className={`mt-2 flex items-center gap-2 rounded-xl px-3 py-2 transition ${
+                  className={`mt-1.5 flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 transition ${
                     pathname === settingsNav.href
                       ? "bg-white/10 text-white"
                       : "text-slate-200 hover:bg-white/5"
@@ -146,21 +148,21 @@ export default function DashboardLayout({
             </details>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] text-slate-400">
+          <div className="flex items-center gap-2 text-[10px] text-slate-400">
             {isConnected && walletAddress ? (
               <div className="relative">
                 <details className="group">
-                  <summary className="flex cursor-pointer items-center gap-2 rounded-full border border-white/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white">
+                  <summary className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/20 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white">
                     {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
-                    <span className="text-xs text-slate-400">▾</span>
+                    <span className="text-[10px] text-slate-400">▾</span>
                   </summary>
-                  <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-white/10 bg-slate-900/95 p-5 text-xs text-white shadow-2xl">
-                    <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-3">
+                  <div className="absolute right-0 mt-1.5 w-56 rounded-xl border border-white/10 bg-slate-900/95 p-3.5 text-[10px] text-white shadow-2xl">
+                    <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2.5">
                       <div>
-                        <p className="text-[10px] uppercase tracking-[0.35em] text-slate-400">
+                        <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400">
                           Connected Wallet
                         </p>
-                        <p className="mt-1 font-semibold text-white">
+                        <p className="mt-0.5 text-xs font-semibold text-white">
                           {walletAddress.slice(0, 6)}...{walletAddress.slice(-6)}
                         </p>
                       </div>
@@ -168,12 +170,12 @@ export default function DashboardLayout({
                         onClick={() =>
                           void navigator.clipboard.writeText(walletAddress)
                         }
-                        className="rounded-full border border-white/20 p-2 text-white transition hover:border-white"
+                        className="cursor-pointer rounded-full border border-white/20 p-1.5 text-white transition-all duration-200 hover:scale-110 hover:border-white active:scale-95"
                         aria-label="Copy address"
                       >
                         <svg
                           viewBox="0 0 24 24"
-                          className="h-3.5 w-3.5"
+                          className="h-3 w-3"
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="1.8"
@@ -183,7 +185,7 @@ export default function DashboardLayout({
                         </svg>
                       </button>
                     </div>
-                    <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3 text-[11px] text-slate-200">
+                    <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-2.5 text-[10px] text-slate-200">
                       {solanaLoading ? (
                         <p>Fetching on-chain data…</p>
                       ) : solanaAccount ? (
@@ -192,9 +194,24 @@ export default function DashboardLayout({
                             <span className="text-sky-300">
                               {solanaAccount.balanceSol.toFixed(4)} SOL
                             </span>
+                            {solPrice && (
+                              <span className="text-slate-300">
+                                {" "}
+                                •{" "}
+                                {(solanaAccount.balanceSol * solPrice).toLocaleString(
+                                  "en-US",
+                                  {
+                                    style: "currency",
+                                    currency: "USD",
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  }
+                                )}
+                              </span>
+                            )}
                             <span> • slot #{solanaAccount.slot}</span>
                           </p>
-                          <p className="mt-1 text-slate-400">
+                          <p className="mt-0.5 text-[9px] text-slate-400">
                             Rent epoch {solanaAccount.rentEpoch ?? "—"}
                             {solanaAccount.executable ? " • Executable" : ""}
                           </p>
@@ -203,17 +220,17 @@ export default function DashboardLayout({
                         <p>No on-chain data found.</p>
                       )}
                     </div>
-                    <div className="mt-4 flex gap-2">
+                    <div className="mt-3 flex gap-1.5">
                       <a
                         href={`https://explorer.solana.com/address/${walletAddress}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 rounded-full border border-white/20 px-3 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white"
+                        className="flex-1 cursor-pointer rounded-full border border-white/20 px-2.5 py-1.5 text-center text-[9px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white"
                       >
                         Explorer
                       </a>
                       <button
-                        className="flex-1 rounded-full border border-white/20 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white"
+                        className="flex-1 cursor-pointer rounded-full border border-white/20 px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white"
                         onClick={disconnect}
                       >
                         Sign out
@@ -224,7 +241,7 @@ export default function DashboardLayout({
               </div>
             ) : (
               <button
-                className="rounded-full border border-white/20 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white transition hover-border-white disabled:opacity-50"
+                className="cursor-pointer rounded-full border border-white/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => connect()}
                 disabled={isConnecting}
               >
@@ -235,9 +252,9 @@ export default function DashboardLayout({
         </div>
       </nav>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[1400px] gap-6 px-4 pb-24 pt-28 sm:px-6 sm:pt-32 lg:gap-10">
-        <aside className="fixed left-6 top-32 hidden h-[calc(100vh-8rem)] w-64 flex-col rounded-3xl border border-white/10 bg-slate-900/85 p-5 backdrop-blur lg:flex">
-          <p className="text-xs uppercase tracking-[0.4em] text-sky-200/80">
+      <div className="relative z-10 mx-auto flex w-full max-w-[1600px] gap-3 px-4 pb-20 pt-24 sm:px-6 sm:pt-26 lg:gap-4">
+        <aside className="fixed left-4 top-24 hidden h-[calc(100vh-6rem)] w-64 flex-col rounded-2xl border border-white/10 bg-slate-900/85 p-5 backdrop-blur lg:left-6 lg:flex">
+          <p className="text-xs uppercase tracking-[0.35em] text-sky-200/80">
             Console
           </p>
           <h2 className="mt-2 text-xl font-semibold text-white">
@@ -250,13 +267,13 @@ export default function DashboardLayout({
                 <Link
                   key={item.key}
                   href={item.href}
-                  className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${
+                  className={`flex cursor-pointer items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-semibold transition ${
                     active
                       ? "border-sky-300/60 text-white"
                       : "border-white/10 text-slate-200 hover:border-sky-300/40 hover:text-white"
                   }`}
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-3">
                     {iconMap[item.icon]}
                     {item.label}
                   </span>
@@ -270,13 +287,13 @@ export default function DashboardLayout({
           <div className="mt-auto pt-6">
             <Link
               href={settingsNav.href}
-              className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${
+              className={`flex cursor-pointer items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-semibold transition ${
                 pathname === settingsNav.href
                   ? "border-sky-300/60 text-white"
                   : "border-white/10 text-slate-200 hover:border-sky-300/40 hover:text-white"
               }`}
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-3">
                 {iconMap[settingsNav.icon]}
                 {settingsNav.label}
               </span>
@@ -284,7 +301,7 @@ export default function DashboardLayout({
             </Link>
           </div>
         </aside>
-        <main className="flex w-full min-w-0 flex-col gap-8 sm:gap-10 lg:pl-[18rem]">
+        <main className="flex w-full min-w-0 flex-col gap-8 sm:gap-10 lg:pl-[17rem]">
           {children}
         </main>
       </div>

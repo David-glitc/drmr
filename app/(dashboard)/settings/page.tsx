@@ -18,43 +18,43 @@ const notifications = ["Email", "Telegram", "SMS", "Push"];
 export default function SettingsPage() {
   return (
     <>
-      <header className="rounded-3xl border border-white/10 bg-slate-900/80 px-5 py-6 backdrop-blur sm:px-8 sm:py-8">
-        <p className="text-xs uppercase tracking-[0.35em] text-sky-200 sm:text-sm">
+      <header className="rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
+        <p className="text-[10px] uppercase tracking-[0.3em] text-sky-200 sm:text-xs">
           Settings
         </p>
-        <h1 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">
+        <h1 className="mt-1.5 text-xl font-semibold text-white sm:text-2xl">
           Accessibility & preferences
         </h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-300 sm:text-base">
+        <p className="mt-1.5 max-w-2xl text-xs text-slate-300 sm:text-sm">
           Fine-tune the American Dream dashboard for any device or sensory
           preference.
         </p>
       </header>
 
-      <section className="grid gap-3 md:grid-cols-2">
+      <section className="grid gap-2 md:grid-cols-2">
         {toggles.map((item) => (
           <div
             key={item.title}
-            className="rounded-2xl border border-white/10 bg-slate-950/60 p-4"
+            className="rounded-xl border border-white/10 bg-slate-950/60 p-3"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white">{item.title}</p>
-                <p className="text-xs text-slate-400">{item.desc}</p>
+                <p className="text-sm text-white">{item.title}</p>
+                <p className="text-[10px] text-slate-400">{item.desc}</p>
               </div>
-              <button className="rounded-full border border-white/20 px-4 py-1 text-xs font-semibold text-white">
+              <button className="cursor-pointer rounded-full border border-white/20 px-3 py-1 text-[10px] font-semibold text-white transition hover:border-white">
                 {item.action}
               </button>
             </div>
           </div>
         ))}
-        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4 md:col-span-2">
-          <p className="text-white">Notification Channels</p>
-          <div className="mt-3 flex flex-wrap gap-3 text-xs">
+        <div className="rounded-xl border border-white/10 bg-slate-950/60 p-3 md:col-span-2">
+          <p className="text-sm text-white">Notification Channels</p>
+          <div className="mt-2.5 flex flex-wrap gap-2 text-[10px]">
             {notifications.map((channel) => (
               <button
                 key={channel}
-                className="rounded-full border border-white/20 px-4 py-1 text-white transition hover:border-white"
+                className="cursor-pointer rounded-full border border-white/20 px-3 py-1 text-white transition hover:border-white"
               >
                 {channel}
               </button>

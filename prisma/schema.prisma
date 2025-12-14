@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  email         String?
+  username      String?
+  isAdmin       Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // User metadata
+  totalStaked      Float   @default(0)
+  totalRewards     Float   @default(0)
+  totalTransactions Int    @default(0)
+  lastActiveAt     DateTime?
+  
+  // Relations
+  activities       UserActivity[]
+  userData        UserData[]
+  
+  @@index([walletAddress])
+  @@index([isAdmin])
+  @@index([createdAt])
+}
+
+model UserActivity {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  action      String   // e.g., "wallet_connected", "stake", "unstake", "trade", "view_portfolio"
+  metadata    String?  // JSON string for additional data
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model UserData {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  key         String   // e.g., "portfolio_value", "staking_apy", "preferences"
+  value       String   // JSON string or plain value
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  
+  @@unique([userId, key])
+  @@index([userId])
+  @@index([key])
+}
+
+model PlatformMetrics {
+  id          String   @id @default(cuid())
+  
+  // Platform statistics
+  totalUsers          Int      @default(0)
+  activeUsers         Int      @default(0)
+  totalStaked         Float    @default(0)
+  totalVolume         Float    @default(0)
+  totalTransactions   Int      @default(0)
+  
+  // Daily metrics
+  dailyActiveUsers    Int      @default(0)
+  dailyStaked         Float    @default(0)
+  dailyVolume         Float    @default(0)
+  dailyTransactions   Int      @default(0)
+  
+  // Timestamp
+  recordedAt          DateTime @default(now())
+  
+  @@index([recordedAt])
+}
+
+model AdminSession {
+  id          String   @id @default(cuid())
+  userId      String
+  token       String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+

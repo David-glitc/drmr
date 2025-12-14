@@ -25,49 +25,49 @@ const tokenCards = [
 export default function TokensPage() {
   return (
     <>
-      <header className="rounded-3xl border border-white/10 bg-slate-900/80 px-5 py-6 backdrop-blur sm:px-8 sm:py-8">
-        <p className="text-xs uppercase tracking-[0.35em] text-sky-200 sm:text-sm">
+      <header className="rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
+        <p className="text-[10px] uppercase tracking-[0.3em] text-sky-200 sm:text-xs">
           Tokens
         </p>
-        <h1 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">
+        <h1 className="mt-1.5 text-xl font-semibold text-white sm:text-2xl">
           DRMR Ecosystem Assets
         </h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-300 sm:text-base">
+        <p className="mt-1.5 max-w-2xl text-xs text-slate-300 sm:text-sm">
           Monitor circulating supply, secondary indexes, and view a live bar
           chart comparing treasury allocations across DRMR primitives.
         </p>
       </header>
 
-      <section className="grid gap-3 sm:gap-4 md:grid-cols-3">
+      <section className="grid gap-2 sm:gap-3 md:grid-cols-3">
         {tokenCards.map((token) => (
           <div
             key={token.label}
-            className="rounded-2xl border border-white/10 bg-slate-950/60 p-4"
+            className="rounded-xl border border-white/10 bg-slate-950/60 p-3"
           >
-            <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-400">
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-slate-400">
               <span>{token.label}</span>
               <span>{token.supply}</span>
             </div>
-            <p className="mt-3 text-3xl font-semibold text-white">
+            <p className="mt-2.5 text-2xl font-semibold text-white">
               {token.price}
             </p>
-            <p className="text-sm text-rose-300">{token.change}</p>
+            <p className="text-xs text-rose-300">{token.change}</p>
           </div>
         ))}
       </section>
 
-      <section className="rounded-3xl border border-white/10 bg-slate-900/80 p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <section className="rounded-2xl border border-white/10 bg-slate-900/80 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-sky-200 sm:text-sm">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-sky-200 sm:text-xs">
               Supply chart
             </p>
-            <h3 className="text-xl font-semibold text-white sm:text-2xl">
+            <h3 className="text-lg font-semibold text-white sm:text-xl">
               Bar distribution via Recharts
             </h3>
           </div>
         </div>
-        <div className="mt-4 h-56 sm:mt-6 sm:h-72">
+        <div className="mt-3 h-48 sm:mt-4 sm:h-60">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={supplyData}>
               <XAxis dataKey="label" stroke="#94a3b8" />

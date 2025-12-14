@@ -2,17 +2,23 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
+import { useConnection } from "@solana/wallet-adapter-react";
 
 import { portfolioService } from "../lib/services";
-import { walletStatusAtom } from "../lib/state";
+import { walletAddressAtom, walletStatusAtom } from "../lib/state";
+import { useSolPrice } from "./useSolPrice";
 
 export function usePortfolio() {
   const walletStatus = useAtomValue(walletStatusAtom);
+  const walletAddress = useAtomValue(walletAddressAtom);
+  const { connection } = useConnection();
+  const { data: solPrice } = useSolPrice();
 
   const query = useQuery({
-    queryKey: ["portfolio", walletStatus],
-    queryFn: () => portfolioService.fetchPortfolio(),
-    enabled: walletStatus === "connected",
+    queryKey: ["portfolio", walletAddress, walletStatus, solPrice],
+    queryFn: () => portfolioService.fetchPortfolio(walletAddress, connection, solPrice),
+    enabled: walletStatus === "connected" && Boolean(walletAddress) && Boolean(connection),
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   return {

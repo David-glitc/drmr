@@ -3,6 +3,7 @@ export const navItems = [
   { key: "staking", label: "Staking", href: "/staking", icon: "diamond" },
   { key: "trade", label: "Trade", href: "/trade", icon: "arrows" },
   { key: "tokens", label: "Tokens", href: "/tokens", icon: "coin" },
+  { key: "admin", label: "Admin", href: "/admin", icon: "gear" },
 ] as const;
 
 export const settingsNav = {
