@@ -20,7 +20,7 @@ export function NetworkToggle() {
       onClick={toggleNetwork}
       disabled={isDisabled}
       className={`
-        relative inline-flex h-7 w-14 items-center rounded-full border transition-colors
+        relative inline-flex h-8 items-center rounded-full border px-3 transition-colors
         ${isDisabled 
           ? "border-white/10 bg-slate-800/50 cursor-not-allowed opacity-50" 
           : network === "mainnet-beta"
@@ -30,19 +30,8 @@ export function NetworkToggle() {
       `}
       title={isDisabled ? "Connect wallet to change network" : `Switch to ${network === "mainnet-beta" ? "devnet" : "mainnet"}`}
     >
-      <span
-        className={`
-          inline-block h-5 w-5 transform rounded-full bg-white transition-transform
-          ${network === "mainnet-beta" ? "translate-x-8" : "translate-x-1"}
-        `}
-      />
-      <span className="absolute inset-0 flex items-center justify-between px-1.5 text-[9px] font-semibold uppercase tracking-wider">
-        <span className={network === "mainnet-beta" ? "text-white/80" : "text-white/40"}>
-          Main
-        </span>
-        <span className={network === "devnet" ? "text-white/80" : "text-white/40"}>
-          Dev
-        </span>
+      <span className="text-xs font-semibold text-white">
+        {network === "mainnet-beta" ? "Mainnet" : "Devnet"}
       </span>
     </button>
   );

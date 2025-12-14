@@ -1,5 +1,3 @@
-"use client";
-
 import { Connection, CommitmentLevel, clusterApiUrl } from "@solana/web3.js";
 
 /**

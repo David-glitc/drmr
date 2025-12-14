@@ -15,6 +15,16 @@ import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 // TODO: Replace with actual DRMR mint address when available
 const DRMR_MINT = "YOUR_DRMR_MINT_ADDRESS_HERE";
 
+// Mock price series data - TODO: Replace with real price data from Jupiter or other price API
+const priceSeries = [
+  { label: "9:00", value: 0.061 },
+  { label: "10:00", value: 0.064 },
+  { label: "11:00", value: 0.066 },
+  { label: "12:00", value: 0.067 },
+  { label: "13:00", value: 0.065 },
+  { label: "14:00", value: 0.068 },
+];
+
 export default function TradePage() {
   const [sendValue, setSendValue] = useState("");
   

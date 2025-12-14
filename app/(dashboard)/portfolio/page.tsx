@@ -234,8 +234,8 @@ export default function PortfolioPage() {
 
   const [copied, setCopied] = useState(false);
   
-  // Show loading overlay when connecting or loading portfolio
-  const showLoading = isConnecting || (isConnected && portfolioLoading);
+  // Show loading overlay only during wallet connection, not during data fetching
+  const showLoading = isConnecting;
 
   const copyAddress = useCallback(() => {
     if (walletAddress) {
@@ -305,7 +305,7 @@ export default function PortfolioPage() {
     <>
       <LoadingOverlay 
         show={showLoading} 
-        message={isConnecting ? "Connecting Wallet..." : "Loading Portfolio..."}
+        message="Connecting Wallet..."
       />
       <header className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
