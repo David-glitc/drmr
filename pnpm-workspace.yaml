@@ -1,11 +1,14 @@
 onlyBuiltDependencies:
+  - '@prisma/client'
   - '@prisma/engines'
   - '@reown/appkit'
+  - bigint-buffer
   - blake-hash
   - bufferutil
   - keccak
   - prisma
   - protobufjs
+  - secp256k1
   - sharp
   - tiny-secp256k1
   - unrs-resolver

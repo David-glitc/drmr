@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useWallet } from "../hooks/useWallet";
 import { useState } from "react";
 import { LoadingOverlay } from "../components/LoadingOverlay";
+import { NetworkToggle } from "../components/NetworkToggle";
 
 export default function LandingPage() {
   const { walletAddress, isConnected, isConnecting, connect, disconnect } = useWallet();
@@ -42,20 +43,26 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-4">
             {isConnected ? (
-              <button
-                onClick={disconnect}
-                className="hidden rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10 sm:block"
-              >
-                {walletAddress?.slice(0, 4)}...{walletAddress?.slice(-4)}
-              </button>
+              <div className="hidden items-center gap-2 sm:flex">
+                <NetworkToggle />
+                <button
+                  onClick={disconnect}
+                  className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  {walletAddress?.slice(0, 4)}...{walletAddress?.slice(-4)}
+                </button>
+              </div>
             ) : (
-              <button
-                onClick={connect}
-                disabled={isConnecting}
-                className="hidden rounded-full border border-sky-500/50 bg-sky-500/20 px-4 py-2 text-sm font-semibold text-sky-300 transition hover:bg-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed sm:block"
-              >
-                {isConnecting ? "Connecting..." : "Connect Wallet"}
-              </button>
+              <div className="hidden items-center gap-2 sm:flex">
+                <NetworkToggle />
+                <button
+                  onClick={connect}
+                  disabled={isConnecting}
+                  className="rounded-full border border-sky-500/50 bg-sky-500/20 px-4 py-2 text-sm font-semibold text-sky-300 transition hover:bg-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isConnecting ? "Connecting..." : "Connect Wallet"}
+                </button>
+              </div>
             )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -89,22 +96,27 @@ export default function LandingPage() {
               <a href="#about" className="block text-sm font-medium text-slate-300">
                 About
               </a>
-              {isConnected ? (
-                <button
-                  onClick={disconnect}
-                  className="w-full rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                >
-                  {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-6)}
-                </button>
-              ) : (
-                <button
-                  onClick={connect}
-                  disabled={isConnecting}
-                  className="w-full rounded-full border border-sky-500/50 bg-sky-500/20 px-4 py-2 text-sm font-semibold text-sky-300 transition hover:bg-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isConnecting ? "Connecting..." : "Connect Wallet"}
-                </button>
-              )}
+              <div className="space-y-3">
+                <div className="flex justify-center">
+                  <NetworkToggle />
+                </div>
+                {isConnected ? (
+                  <button
+                    onClick={disconnect}
+                    className="w-full rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                  >
+                    {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-6)}
+                  </button>
+                ) : (
+                  <button
+                    onClick={connect}
+                    disabled={isConnecting}
+                    className="w-full rounded-full border border-sky-500/50 bg-sky-500/20 px-4 py-2 text-sm font-semibold text-sky-300 transition hover:bg-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isConnecting ? "Connecting..." : "Connect Wallet"}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

@@ -5,7 +5,7 @@ import { useAtomValue } from "jotai";
 import { useCallback } from "react";
 import { useConnection } from "@solana/wallet-adapter-react";
 
-import { walletAddressAtom, autoRefreshAtom, refreshIntervalAtom } from "../lib/state";
+import { walletAddressAtom, autoRefreshAtom, refreshIntervalAtom, networkAtom } from "../lib/state";
 import { portfolioService } from "../lib/services";
 import { useSolPrice } from "./useSolPrice";
 import { onChainCache } from "../lib/onchain/cache";
@@ -22,6 +22,7 @@ import { onChainFetcher } from "../lib/onchain/fetcher";
  */
 export function useEnhancedPortfolio() {
   const walletAddress = useAtomValue(walletAddressAtom);
+  const network = useAtomValue(networkAtom);
   const { connection } = useConnection();
   const autoRefresh = useAtomValue(autoRefreshAtom);
   const refreshInterval = useAtomValue(refreshIntervalAtom);
@@ -29,7 +30,7 @@ export function useEnhancedPortfolio() {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["enhanced-portfolio", walletAddress, solPrice],
+    queryKey: ["enhanced-portfolio", walletAddress, network, solPrice],
     queryFn: async () => {
       if (!walletAddress || !connection) {
         return {
@@ -70,9 +71,9 @@ export function useEnhancedPortfolio() {
     if (walletAddress) {
       // Invalidate cache and refetch
       onChainCache.invalidate(`portfolio:${walletAddress}`);
-      queryClient.invalidateQueries({ queryKey: ["enhanced-portfolio", walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ["enhanced-portfolio", walletAddress, network] });
     }
-  }, [walletAddress, queryClient]);
+  }, [walletAddress, network, queryClient]);
 
   return {
     tokens: query.data?.tokens ?? [],

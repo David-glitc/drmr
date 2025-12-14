@@ -4,9 +4,10 @@ import { prisma } from "@/lib/prisma";
 // GET /api/users/[id]/activities - Get user activities
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -14,7 +15,7 @@ export async function GET(
     
     const skip = (page - 1) * limit;
     
-    const where: any = { userId: params.id };
+    const where: any = { userId: id };
     if (action) {
       where.action = action;
     }
@@ -50,9 +51,10 @@ export async function GET(
 // POST /api/users/[id]/activities - Create a new activity
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { action, metadata, ipAddress, userAgent } = body;
     
@@ -65,13 +67,13 @@ export async function POST(
     
     // Update user's lastActiveAt
     await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { lastActiveAt: new Date() },
     });
     
     const activity = await prisma.userActivity.create({
       data: {
-        userId: params.id,
+        userId: id,
         action,
         metadata: metadata ? JSON.stringify(metadata) : null,
         ipAddress,

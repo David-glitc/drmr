@@ -5,7 +5,7 @@ import { useAtomValue } from "jotai";
 import { useCallback } from "react";
 import { useConnection } from "@solana/wallet-adapter-react";
 
-import { walletAddressAtom, autoRefreshAtom, refreshIntervalAtom } from "../lib/state";
+import { walletAddressAtom, autoRefreshAtom, refreshIntervalAtom, networkAtom } from "../lib/state";
 import { onChainFetcher } from "../lib/onchain/fetcher";
 
 /**
@@ -19,13 +19,14 @@ import { onChainFetcher } from "../lib/onchain/fetcher";
  */
 export function useEnhancedAccount() {
   const walletAddress = useAtomValue(walletAddressAtom);
+  const network = useAtomValue(networkAtom);
   const { connection } = useConnection();
   const autoRefresh = useAtomValue(autoRefreshAtom);
   const refreshInterval = useAtomValue(refreshIntervalAtom);
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["enhanced-account", walletAddress],
+    queryKey: ["enhanced-account", walletAddress, network],
     queryFn: async () => {
       if (!walletAddress) return null;
       
@@ -46,9 +47,9 @@ export function useEnhancedAccount() {
   const refresh = useCallback(() => {
     if (walletAddress) {
       // Invalidate cache and refetch
-      queryClient.invalidateQueries({ queryKey: ["enhanced-account", walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ["enhanced-account", walletAddress, network] });
     }
-  }, [walletAddress, queryClient]);
+  }, [walletAddress, network, queryClient]);
 
   return {
     data: query.data,

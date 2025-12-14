@@ -4,11 +4,12 @@ import { prisma } from "@/lib/prisma";
 // GET /api/users/[id] - Get a specific user
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         activities: {
           take: 50,
@@ -41,9 +42,10 @@ export async function GET(
 // PATCH /api/users/[id] - Update a user
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { email, username, isAdmin, isActive, totalStaked, totalRewards } = body;
     
@@ -56,7 +58,7 @@ export async function PATCH(
     if (totalRewards !== undefined) updateData.totalRewards = totalRewards;
     
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
     });
     
@@ -79,11 +81,12 @@ export async function PATCH(
 // DELETE /api/users/[id] - Delete a user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await prisma.user.delete({
-      where: { id: params.id },
+      where: { id },
     });
     
     return NextResponse.json({ success: true });

@@ -9,6 +9,7 @@ import { useWallet } from "../../hooks/useWallet";
 import { useSolanaAccount } from "../../hooks/useSolanaAccount";
 import { useSolPrice } from "../../hooks/useSolPrice";
 import { LoadingOverlay } from "../../components/LoadingOverlay";
+import { NetworkToggle } from "../../components/NetworkToggle";
 
 const iconMap: Record<string, React.ReactElement> = {
   chart: (
@@ -240,13 +241,16 @@ export default function DashboardLayout({
                 </details>
               </div>
             ) : (
-              <button
-                className="cursor-pointer rounded-full border border-white/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => connect()}
-                disabled={isConnecting}
-              >
-                {isConnecting ? "Connecting..." : "Connect Wallet"}
-              </button>
+              <div className="flex items-center gap-2">
+                <NetworkToggle />
+                <button
+                  className="cursor-pointer rounded-full border border-white/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => connect()}
+                  disabled={isConnecting}
+                >
+                  {isConnecting ? "Connecting..." : "Connect Wallet"}
+                </button>
+              </div>
             )}
           </div>
         </div>
