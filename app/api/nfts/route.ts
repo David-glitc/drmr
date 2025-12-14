@@ -48,7 +48,7 @@ async function loadNFTsInBatches(
             description: json?.description || "",
             image: json?.image || "",
             explorerLink,
-            collection: loadedNft.collection?.name,
+            collection: loadedNft.collection ? loadedNft.collection.address.toBase58() : undefined,
             attributes: json?.attributes,
           };
         } catch (error: any) {
