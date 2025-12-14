@@ -83,9 +83,8 @@ class ConnectionManager {
    * Close all connections
    */
   closeAll(): void {
-    this.connections.forEach((connection) => {
-      connection.removeAllListeners();
-    });
+    // Clear all connections from the map
+    // Connection objects don't need explicit cleanup in this version
     this.connections.clear();
   }
 
