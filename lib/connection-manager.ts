@@ -1,4 +1,4 @@
-import { Connection, CommitmentLevel, clusterApiUrl } from "@solana/web3.js";
+import { Connection, Commitment, clusterApiUrl } from "@solana/web3.js";
 
 /**
  * Enhanced Connection Manager
@@ -9,7 +9,7 @@ export type Network = "mainnet-beta" | "devnet" | "testnet";
 
 interface ConnectionConfig {
   endpoint: string;
-  commitment: CommitmentLevel;
+  commitment: Commitment;
   wsEndpoint?: string;
   httpHeaders?: Record<string, string>;
 }
@@ -17,7 +17,7 @@ interface ConnectionConfig {
 class ConnectionManager {
   private connections: Map<string, Connection> = new Map();
   private defaultEndpoint: string;
-  private defaultCommitment: CommitmentLevel = "confirmed";
+  private defaultCommitment: Commitment = "confirmed";
 
   constructor() {
     this.defaultEndpoint =
