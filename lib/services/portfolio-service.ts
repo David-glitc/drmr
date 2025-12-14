@@ -198,8 +198,10 @@ export class PortfolioService {
           // Check if it's a transfer
           const preBalances = tx.meta?.preBalances || [];
           const postBalances = tx.meta?.postBalances || [];
-          const accountKeys = tx.transaction.message.accountKeys.map((k) =>
-            k.pubkey.toBase58()
+          
+          // Get account keys - handle both VersionedTransaction and Transaction
+          const accountKeys = tx.transaction.message.getAccountKeys().staticAccountKeys.map((k) =>
+            k.toBase58()
           );
           const accountIndex = accountKeys.findIndex(
             (k) => k === publicKey.toBase58()
