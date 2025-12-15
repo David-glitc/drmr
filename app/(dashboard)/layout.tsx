@@ -13,7 +13,7 @@ import { NetworkToggle } from "../../components/NetworkToggle";
 
 const iconMap: Record<string, React.ReactElement> = {
   chart: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 text-rose-300" fill="none">
+    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
       <path
         d="M5 17V11M10 17V7M15 17V13M20 17V5"
         stroke="currentColor"
@@ -24,7 +24,7 @@ const iconMap: Record<string, React.ReactElement> = {
     </svg>
   ),
   diamond: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 text-rose-300" fill="none">
+    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
       <path
         d="M12 3l7 7-7 11-7-11 7-7z"
         stroke="currentColor"
@@ -34,7 +34,7 @@ const iconMap: Record<string, React.ReactElement> = {
     </svg>
   ),
   arrows: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 text-rose-300" fill="none">
+    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
       <path
         d="M7 7h10l-3-3m3 13H7l3 3"
         stroke="currentColor"
@@ -45,7 +45,7 @@ const iconMap: Record<string, React.ReactElement> = {
     </svg>
   ),
   coin: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 text-rose-300" fill="none">
+    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
       <ellipse cx="12" cy="6" rx="8" ry="3" stroke="currentColor" strokeWidth="2" />
       <path
         d="M4 6v8c0 1.66 3.58 3 8 3s8-1.34 8-3V6"
@@ -56,7 +56,7 @@ const iconMap: Record<string, React.ReactElement> = {
     </svg>
   ),
   doc: (
-    <svg viewBox="0 0 24 24" className="h-4 w-4 text-rose-300" fill="none">
+    <svg viewBox="0 0 24 24" className="h-4 w-4 text-sky-300" fill="none">
       <path
         d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"
         stroke="currentColor"
@@ -66,7 +66,7 @@ const iconMap: Record<string, React.ReactElement> = {
     </svg>
   ),
   gear: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 text-rose-300" fill="none">
+    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
       <path
         d="M12 15a3 3 0 100-6 3 3 0 000 6z"
         stroke="currentColor"
@@ -107,21 +107,14 @@ export default function DashboardLayout({
       <nav className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-slate-950/80 px-3 py-2 backdrop-blur sm:px-6">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <img 
-                src="/logo.jpg" 
-                alt="DRMR Logo" 
-                className="h-8 w-8 rounded-full object-cover border border-rose-500/30"
-              />
-              <div>
-                <p className="text-[9px] uppercase tracking-[0.4em] text-rose-300">
-                  DRMR
-                </p>
-                <p className="text-sm font-semibold text-white sm:text-base">
-                  American Dream Dashboard
-                </p>
-              </div>
-            </Link>
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.4em] text-rose-300">
+              DRMR
+            </p>
+            <p className="text-sm font-semibold text-white sm:text-base">
+              American Dream Dashboard
+            </p>
+          </div>
             <details className="lg:hidden">
               <summary className="rounded-full border border-white/15 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.3em] text-white">
                 Menu
@@ -157,11 +150,10 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-2 text-[10px] text-slate-400">
-            <NetworkToggle />
             {isConnected && walletAddress ? (
               <div className="relative">
                 <details className="group">
-                  <summary className="flex cursor-pointer items-center gap-1.5 rounded-full border border-rose-500/30 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-rose-500/50">
+                  <summary className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/20 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white">
                     {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
                     <span className="text-[10px] text-slate-400">▾</span>
                   </summary>
@@ -200,7 +192,7 @@ export default function DashboardLayout({
                       ) : solanaAccount ? (
                         <>
                           <p>
-                            <span className="text-rose-300">
+                            <span className="text-sky-300">
                               {solanaAccount.balanceSol.toFixed(4)} SOL
                             </span>
                             {solPrice && (
@@ -239,7 +231,7 @@ export default function DashboardLayout({
                         Explorer
                       </a>
                       <button
-                        className="flex-1 cursor-pointer rounded-full border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.3em] text-rose-300 transition hover:border-rose-500/50 hover:bg-rose-500/20"
+                        className="flex-1 cursor-pointer rounded-full border border-white/20 px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white"
                         onClick={disconnect}
                       >
                         Sign out
@@ -249,13 +241,16 @@ export default function DashboardLayout({
                 </details>
               </div>
             ) : (
-              <button
-                className="cursor-pointer rounded-full border border-rose-500/50 bg-rose-500/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-rose-300 transition hover:bg-rose-500/30 hover:border-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => connect()}
-                disabled={isConnecting}
-              >
-                {isConnecting ? "Connecting..." : "Connect Wallet"}
-              </button>
+              <div className="flex items-center gap-2">
+                <NetworkToggle />
+                <button
+                  className="cursor-pointer rounded-full border border-white/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => connect()}
+                  disabled={isConnecting}
+                >
+                  {isConnecting ? "Connecting..." : "Connect Wallet"}
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -263,7 +258,7 @@ export default function DashboardLayout({
 
       <div className="relative z-10 mx-auto flex w-full max-w-[1600px] gap-3 px-4 pb-20 pt-24 sm:px-6 sm:pt-26 lg:gap-4">
         <aside className="fixed left-4 top-24 hidden h-[calc(100vh-6rem)] w-64 flex-col rounded-2xl border border-white/10 bg-slate-900/85 p-5 backdrop-blur lg:left-6 lg:flex">
-          <p className="text-xs uppercase tracking-[0.35em] text-rose-200/80">
+          <p className="text-xs uppercase tracking-[0.35em] text-sky-200/80">
             Console
           </p>
           <h2 className="mt-2 text-xl font-semibold text-white">
@@ -278,15 +273,15 @@ export default function DashboardLayout({
                   href={item.href}
                   className={`flex cursor-pointer items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-semibold transition ${
                     active
-                      ? "border-rose-300/60 text-white"
-                      : "border-white/10 text-slate-200 hover:border-rose-300/40 hover:text-white"
+                      ? "border-sky-300/60 text-white"
+                      : "border-white/10 text-slate-200 hover:border-sky-300/40 hover:text-white"
                   }`}
                 >
                   <span className="flex items-center gap-3">
                     {iconMap[item.icon]}
                     {item.label}
                   </span>
-                  <span className="text-xs text-rose-300/80">
+                  <span className="text-xs text-sky-300/80">
                     ⌘{item.label[0]}
                   </span>
                 </Link>

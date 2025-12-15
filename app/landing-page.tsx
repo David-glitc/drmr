@@ -25,7 +25,7 @@ export default function LandingPage() {
             $DRMR
           </Link>
           <div className="hidden items-center gap-8 md:flex">
-            <Link href="/" className="text-sm font-medium text-white hover:text-rose-300 transition">
+            <Link href="/" className="text-sm font-medium text-white hover:text-sky-300 transition">
               Home
             </Link>
             <Link href="/portfolio" className="text-sm font-medium text-slate-300 hover:text-white transition">
@@ -58,7 +58,7 @@ export default function LandingPage() {
                 <button
                   onClick={connect}
                   disabled={isConnecting}
-                  className="rounded-full border border-rose-500/50 bg-rose-500/20 px-4 py-2 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-full border border-sky-500/50 bg-sky-500/20 px-4 py-2 text-sm font-semibold text-sky-300 transition hover:bg-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isConnecting ? "Connecting..." : "Connect Wallet"}
                 </button>
@@ -135,7 +135,7 @@ export default function LandingPage() {
             <div className="mt-10 flex items-center justify-center gap-4">
               <Link
                 href="/portfolio"
-                className="rounded-full border border-rose-500/50 bg-rose-500/20 px-6 py-3 text-base font-semibold text-rose-300 transition hover:bg-rose-500/30"
+                className="rounded-full border border-sky-500/50 bg-sky-500/20 px-6 py-3 text-base font-semibold text-sky-300 transition hover:bg-sky-500/30"
               >
                 Connect Wallet to Get Started
               </Link>
@@ -195,7 +195,7 @@ export default function LandingPage() {
               <div className="mt-8">
                 <Link
                   href="/portfolio"
-                  className="block w-full rounded-xl border border-rose-500/50 bg-rose-500/20 px-6 py-4 text-center text-base font-semibold text-rose-300 transition hover:bg-rose-500/30"
+                  className="block w-full rounded-xl border border-sky-500/50 bg-sky-500/20 px-6 py-4 text-center text-base font-semibold text-sky-300 transition hover:bg-sky-500/30"
                 >
                   Connect Wallet to Get Started
                 </Link>
@@ -307,7 +307,7 @@ export default function LandingPage() {
             <div className="mt-10 flex items-center justify-center gap-4">
               <Link
                 href="/portfolio"
-                className="rounded-full border border-rose-500/50 bg-rose-500/20 px-6 py-3 text-base font-semibold text-rose-300 transition hover:bg-rose-500/30"
+                className="rounded-full border border-sky-500/50 bg-sky-500/20 px-6 py-3 text-base font-semibold text-sky-300 transition hover:bg-sky-500/30"
               >
                 Connect Wallet to Get Started
               </Link>

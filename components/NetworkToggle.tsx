@@ -2,46 +2,36 @@
 
 import { useAtom } from "jotai";
 import { networkAtom } from "@/lib/state/atoms";
+import { useAtomValue } from "jotai";
+import { walletStatusAtom } from "@/lib/state/atoms";
 
 export function NetworkToggle() {
   const [network, setNetwork] = useAtom(networkAtom);
-  const isMainnet = network === "mainnet-beta";
+  const walletStatus = useAtomValue(walletStatusAtom);
+  const isDisabled = walletStatus !== "connected";
 
   const toggleNetwork = () => {
-    setNetwork(isMainnet ? "devnet" : "mainnet-beta");
+    if (isDisabled) return;
+    setNetwork(network === "mainnet-beta" ? "devnet" : "mainnet-beta");
   };
 
   return (
     <button
       onClick={toggleNetwork}
-      className="relative inline-flex h-7 w-14 items-center rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:ring-offset-2 focus:ring-offset-slate-950"
-      style={{
-        backgroundColor: isMainnet ? "rgba(244, 63, 94, 0.2)" : "rgba(245, 158, 11, 0.2)",
-        borderColor: isMainnet ? "rgba(244, 63, 94, 0.5)" : "rgba(245, 158, 11, 0.5)",
-      }}
-      title={`Switch to ${isMainnet ? "devnet" : "mainnet"}`}
-      aria-label={`Switch to ${isMainnet ? "devnet" : "mainnet"}`}
+      disabled={isDisabled}
+      className={`
+        relative inline-flex h-8 items-center rounded-full border px-3 transition-colors
+        ${isDisabled 
+          ? "border-white/10 bg-slate-800/50 cursor-not-allowed opacity-50" 
+          : network === "mainnet-beta"
+          ? "border-sky-500/50 bg-sky-500/20"
+          : "border-amber-500/50 bg-amber-500/20"
+        }
+      `}
+      title={isDisabled ? "Connect wallet to change network" : `Switch to ${network === "mainnet-beta" ? "devnet" : "mainnet"}`}
     >
-      {/* Toggle switch thumb */}
-      <span
-        className={`
-          inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ease-in-out shadow-md
-          ${isMainnet ? "translate-x-8" : "translate-x-1"}
-        `}
-      />
-      
-      {/* Network labels */}
-      <span className="absolute inset-0 flex items-center justify-between px-1.5">
-        <span className={`text-[9px] font-semibold uppercase tracking-wider transition-opacity ${
-          isMainnet ? "opacity-80" : "opacity-40"
-        }`}>
-          M
-        </span>
-        <span className={`text-[9px] font-semibold uppercase tracking-wider transition-opacity ${
-          !isMainnet ? "opacity-80" : "opacity-40"
-        }`}>
-          D
-        </span>
+      <span className="text-xs font-semibold text-white">
+        {network === "mainnet-beta" ? "Mainnet" : "Devnet"}
       </span>
     </button>
   );

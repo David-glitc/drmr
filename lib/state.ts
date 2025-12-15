@@ -9,29 +9,11 @@ const initialPool = stakingService.getPoolConfig("SOL");
 const initialRewards = stakingService.estimateRewards("SOL", 0);
 
 // Legacy atoms - kept for backward compatibility
+// New code should use lib/state/atoms.ts
+export const walletAddressAtom = atom<string | null>(null);
+export const walletStatusAtom = atom<WalletStatus>("disconnected");
+
 export const activePoolAtom = atom<PoolKey>("SOL");
 export const poolConfigAtom = atom<PoolConfig>(initialPool);
 export const estimatedRewardsAtom = atom<string>(initialRewards);
-
-// Re-export all atoms from the new state management system
-export {
-  walletAddressAtom,
-  walletStatusAtom,
-  walletErrorAtom,
-  connectionStatusAtom,
-  lastConnectionAttemptAtom,
-  connectionRetryCountAtom,
-  accountDataAtom,
-  portfolioDataAtom,
-  cacheTimestampAtom,
-  cacheDataAtom,
-  isLoadingAtom,
-  errorMessageAtom,
-  autoRefreshAtom,
-  refreshIntervalAtom,
-  networkAtom,
-  isConnectedAtom,
-  hasWalletAtom,
-  shouldRefreshAtom,
-} from "./state/index";
 
