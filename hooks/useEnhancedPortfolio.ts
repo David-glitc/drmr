@@ -5,7 +5,7 @@ import { useAtomValue } from "jotai";
 import { useCallback } from "react";
 import { useConnection } from "@solana/wallet-adapter-react";
 
-import { walletAddressAtom, autoRefreshAtom, refreshIntervalAtom, networkAtom } from "../lib/state";
+import { walletAddressAtom, autoRefreshAtom, refreshIntervalAtom, networkAtom } from "../lib/state/index";
 import { portfolioService } from "../lib/services";
 import { useSolPrice } from "./useSolPrice";
 import { onChainCache } from "../lib/onchain/cache";
