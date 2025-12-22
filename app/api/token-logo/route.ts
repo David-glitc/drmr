@@ -40,20 +40,25 @@ export async function GET(request: NextRequest) {
 
     try {
       const mint = new PublicKey(mintAddress);
-      const token = await metaplex.tokens().findByMint({ mint });
+      
+      // Use NFTs API to fetch token metadata (works for SPL tokens with metadata)
+      const nft = await metaplex.nfts().findByMint({ mint });
 
-      if (!token.metadata) {
+      if (!nft.json) {
+        // Try to fetch metadata URI directly if json is not available
+        if (nft.uri) {
+          const response = await fetch(nft.uri);
+          if (response.ok) {
+            const metadataJson = await response.json();
+            const logoUrl = metadataJson.image || null;
+            return NextResponse.json({ logo: logoUrl });
+          }
+        }
         return NextResponse.json({ logo: null });
       }
 
-      // Fetch the off-chain metadata JSON
-      const response = await fetch(token.metadata.uri);
-      if (!response.ok) {
-        throw new Error("Failed to fetch metadata JSON");
-      }
-
-      const metadataJson = await response.json();
-      const logoUrl = metadataJson.image || null;
+      // Use the json property directly (already parsed metadata)
+      const logoUrl = nft.json.image || null;
 
       return NextResponse.json({ logo: logoUrl });
     } catch (error) {
