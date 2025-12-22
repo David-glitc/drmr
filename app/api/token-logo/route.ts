@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
       const mint = new PublicKey(mintAddress);
       
       // Use NFTs API to fetch token metadata (works for SPL tokens with metadata)
-      const nft = await metaplex.nfts().findByMint({ mint });
+      // findByMint expects mintAddress parameter, not mint
+      const nft = await metaplex.nfts().findByMint({ mintAddress: mint });
 
       if (!nft.json) {
         // Try to fetch metadata URI directly if json is not available
