@@ -91,8 +91,8 @@ export class ValidatorService {
               commission: validator.commission,
               activatedStake: validator.activatedStake,
               epochCredits: totalEpochCredits, // Store total credits as number
-              lastVote: validator.lastVote,
-              rootSlot: validator.rootSlot,
+              lastVote: (validator as any).lastVote ?? 0, // lastVote may not exist in type definition
+              rootSlot: (validator as any).rootSlot ?? 0, // rootSlot exists in RPC response but not in type definition
               delinquent: false,
             };
           } catch (error) {
