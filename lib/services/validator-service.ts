@@ -70,9 +70,17 @@ export class ValidatorService {
             const baseAPY = this.network === "devnet" ? 0.08 : 0.07; // ~8% for devnet, ~7% for mainnet
             const commissionRate = validator.commission / 100;
             
+            // epochCredits is an array of [epoch, credits, previousCredits] tuples
+            // Get the total credits from the last entry if available
+            const epochCreditsArray = validator.epochCredits || [];
+            const hasEpochCredits = Array.isArray(epochCreditsArray) && epochCreditsArray.length > 0;
+            const totalEpochCredits = hasEpochCredits 
+              ? (epochCreditsArray[epochCreditsArray.length - 1] as [number, number, number])[1] 
+              : 0;
+            
             // APY after commission: baseAPY * (1 - commissionRate)
             // Add some variance based on epoch credits performance
-            const performanceMultiplier = validator.epochCredits > 0 ? 1.0 : 0.8;
+            const performanceMultiplier = totalEpochCredits > 0 ? 1.0 : 0.8;
             const apy = baseAPY * (1 - commissionRate) * performanceMultiplier * 100; // Convert to percentage
 
             return {
@@ -82,7 +90,7 @@ export class ValidatorService {
               apy: Math.max(0, apy), // Ensure non-negative
               commission: validator.commission,
               activatedStake: validator.activatedStake,
-              epochCredits: validator.epochCredits,
+              epochCredits: totalEpochCredits, // Store total credits as number
               lastVote: validator.lastVote,
               rootSlot: validator.rootSlot,
               delinquent: false,
