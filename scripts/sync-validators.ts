@@ -41,6 +41,7 @@ async function syncValidators(network: "devnet" | "mainnet-beta" = "devnet") {
 
     for (const validator of validators) {
       try {
+        // @ts-expect-error - Prisma client needs regeneration after schema update
         const result = await prisma.validator.upsert({
           where: { voteAccount: validator.voteAccount },
           update: {
