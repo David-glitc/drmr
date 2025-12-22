@@ -248,12 +248,23 @@ export class PortfolioService {
           const postBalances = tx.meta?.postBalances || [];
           
           // Handle both legacy and versioned transactions
+          // According to Solana web3.js docs:
+          // - Legacy: message.accountKeys is AccountMeta[] (each has pubkey: PublicKey)
+          // - Versioned: use getAccountKeys().staticAccountKeys (PublicKey[])
           let accountKeys: string[] = [];
           if ('accountKeys' in tx.transaction.message) {
             // Legacy transaction
-            accountKeys = tx.transaction.message.accountKeys.map((k) =>
-              k.pubkey.toBase58()
-            );
+            const legacyMessage = tx.transaction.message as { accountKeys: Array<{ pubkey: PublicKey } | PublicKey> };
+            accountKeys = legacyMessage.accountKeys.map((k) => {
+              // Type guard: check if it's AccountMeta (has pubkey) or PublicKey (direct)
+              if ('pubkey' in k && k.pubkey instanceof PublicKey) {
+                return k.pubkey.toBase58();
+              } else if (k instanceof PublicKey) {
+                return k.toBase58();
+              }
+              // Fallback: try to call toBase58 if it exists
+              return (k as any)?.toBase58?.() || '';
+            }).filter((key) => key !== '');
           } else {
             // Versioned transaction (MessageV0)
             accountKeys = tx.transaction.message.getAccountKeys().staticAccountKeys.map((k) =>
