@@ -19,109 +19,109 @@ model User {
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  
+
   // User metadata
-  totalStaked      Float   @default(0)
-  totalRewards     Float   @default(0)
-  totalTransactions Int    @default(0)
-  lastActiveAt     DateTime?
-  
+  totalStaked       Float     @default(0)
+  totalRewards      Float     @default(0)
+  totalTransactions Int       @default(0)
+  lastActiveAt      DateTime?
+
   // Relations
-  activities       UserActivity[]
-  userData        UserData[]
-  stakingRecords   StakingRecord[]
-  
+  activities     UserActivity[]
+  userData       UserData[]
+  stakingRecords StakingRecord[]
+
   @@index([walletAddress])
   @@index([isAdmin])
   @@index([createdAt])
 }
 
 model UserActivity {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  action      String   // e.g., "wallet_connected", "stake", "unstake", "trade", "view_portfolio"
-  metadata    String?  // JSON string for additional data
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  action    String // e.g., "wallet_connected", "stake", "unstake", "trade", "view_portfolio"
+  metadata  String? // JSON string for additional data
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
   @@index([userId])
   @@index([action])
   @@index([createdAt])
 }
 
 model UserData {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  key         String   // e.g., "portfolio_value", "staking_apy", "preferences"
-  value       String   // JSON string or plain value
-  updatedAt   DateTime @updatedAt
-  createdAt   DateTime @default(now())
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  key       String // e.g., "portfolio_value", "staking_apy", "preferences"
+  value     String // JSON string or plain value
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
   @@unique([userId, key])
   @@index([userId])
   @@index([key])
 }
 
 model PlatformMetrics {
-  id          String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Platform statistics
-  totalUsers          Int      @default(0)
-  activeUsers         Int      @default(0)
-  totalStaked         Float    @default(0)
-  totalVolume         Float    @default(0)
-  totalTransactions   Int      @default(0)
-  
+  totalUsers        Int   @default(0)
+  activeUsers       Int   @default(0)
+  totalStaked       Float @default(0)
+  totalVolume       Float @default(0)
+  totalTransactions Int   @default(0)
+
   // Daily metrics
-  dailyActiveUsers    Int      @default(0)
-  dailyStaked         Float    @default(0)
-  dailyVolume         Float    @default(0)
-  dailyTransactions   Int      @default(0)
-  
+  dailyActiveUsers  Int   @default(0)
+  dailyStaked       Float @default(0)
+  dailyVolume       Float @default(0)
+  dailyTransactions Int   @default(0)
+
   // Timestamp
-  recordedAt          DateTime @default(now())
-  
+  recordedAt DateTime @default(now())
+
   @@index([recordedAt])
 }
 
 model AdminSession {
-  id          String   @id @default(cuid())
-  userId      String
-  token       String   @unique
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
-  
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
   @@index([userId])
   @@index([token])
   @@index([expiresAt])
 }
 
 model Validator {
-  id              String   @id @default(cuid())
-  voteAccount     String   @unique
-  identity        String
-  name            String
-  network         String   @default("devnet") // "devnet" or "mainnet-beta"
-  apy             Float
-  commission      Float
-  activatedStake  BigInt
-  epochCredits    BigInt
-  lastVote        BigInt
-  rootSlot        BigInt
-  delinquent      Boolean  @default(false)
-  isActive        Boolean  @default(true)
-  lastSyncedAt    DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id             String   @id @default(cuid())
+  voteAccount    String   @unique
+  identity       String
+  name           String
+  network        String   @default("devnet") // "devnet" or "mainnet-beta"
+  apy            Float
+  commission     Float
+  activatedStake BigInt
+  epochCredits   BigInt
+  lastVote       BigInt
+  rootSlot       BigInt
+  delinquent     Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  lastSyncedAt   DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
   // Relations
-  stakingRecords  StakingRecord[]
-  
+  stakingRecords StakingRecord[]
+
   @@index([voteAccount])
   @@index([network])
   @@index([apy])
@@ -130,31 +130,30 @@ model Validator {
 }
 
 model StakingRecord {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  validatorId     String
-  validator       Validator @relation(fields: [validatorId], references: [id], onDelete: Restrict)
-  
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  validatorId String
+  validator   Validator @relation(fields: [validatorId], references: [id], onDelete: Restrict)
+
   // Staking details
-  amount          Float
-  stakeAccount    String?  // Solana stake account address
-  apy             Float    // APY at time of staking
-  status          String   @default("active") // "active", "delegating", "deactivated", "withdrawn"
-  
+  amount       Float
+  stakeAccount String? // Solana stake account address
+  apy          Float // APY at time of staking
+  status       String  @default("active") // "active", "delegating", "deactivated", "withdrawn"
+
   // Rewards tracking
-  totalRewards    Float    @default(0)
+  totalRewards    Float   @default(0)
   lastRewardEpoch BigInt?
-  
+
   // Timestamps
-  stakedAt        DateTime @default(now())
-  unstakedAt      DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  stakedAt   DateTime  @default(now())
+  unstakedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
   @@index([userId])
   @@index([validatorId])
   @@index([status])
   @@index([stakedAt])
 }
-
