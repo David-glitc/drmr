@@ -72,8 +72,8 @@ export function useWallet() {
 
       const transaction = new Transaction().add(
         SystemProgram.transfer({
-          fromPublicKey: publicKey,
-          toPublicKey,
+          fromPubkey: publicKey,
+          toPubkey: toPublicKey,
           lamports,
         })
       );
