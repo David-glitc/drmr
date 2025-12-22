@@ -115,26 +115,26 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
-        <p className="mt-2 text-sm text-slate-400">
+        <h1 className="text-2xl font-semibold text-white mb-2">Admin Dashboard</h1>
+        <p className="text-sm text-white/60">
           Manage users, track activities, and monitor platform metrics
         </p>
       </div>
 
       {/* Stats Overview */}
       {statsLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="h-24 animate-pulse rounded-xl border border-white/10 bg-slate-900/50"
+              className="h-20 sm:h-24 animate-pulse rounded-xl border border-white/10 bg-[#111118]"
             />
           ))}
         </div>
       ) : stats ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Total Users"
             value={stats.totalUsers.toLocaleString()}
@@ -160,7 +160,7 @@ export default function AdminPage() {
 
       {/* Activity Stats */}
       {stats && stats.activityStats.length > 0 && (
-        <div className="rounded-xl border border-white/10 bg-slate-900/50 p-6">
+        <div className="rounded-xl border border-white/10 bg-[#111118] p-6">
           <h2 className="mb-4 text-lg font-semibold text-white">
             Activity Breakdown
           </h2>
@@ -168,9 +168,9 @@ export default function AdminPage() {
             {stats.activityStats.map((stat) => (
               <div
                 key={stat.action}
-                className="rounded-lg border border-white/10 bg-slate-950/50 p-3"
+                className="rounded-lg border border-white/10 bg-[#0a0a0f] p-3"
               >
-                <p className="text-xs text-slate-400">{stat.action}</p>
+                <p className="text-xs text-white/60">{stat.action}</p>
                 <p className="mt-1 text-lg font-semibold text-white">
                   {stat.count}
                 </p>
@@ -181,9 +181,9 @@ export default function AdminPage() {
       )}
 
       {/* Users Table */}
-      <div className="rounded-xl border border-white/10 bg-slate-900/50 p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Users</h2>
+      <div className="rounded-xl border border-white/10 bg-[#111118] p-4 sm:p-6">
+        <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <h2 className="text-base sm:text-lg font-semibold text-white">Users</h2>
           <input
             type="text"
             placeholder="Search users..."
@@ -192,7 +192,7 @@ export default function AdminPage() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-sky-300/50 focus:outline-none"
+            className="w-full sm:w-auto rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-2 text-sm text-white placeholder-white/40 focus:border-blue-500/50 focus:outline-none"
           />
         </div>
 
@@ -201,72 +201,79 @@ export default function AdminPage() {
             {[1, 2, 3, 4, 5].map((i) => (
               <div
                 key={i}
-                className="h-16 animate-pulse rounded-lg border border-white/10 bg-slate-950/50"
+                className="h-16 animate-pulse rounded-lg border border-white/10 bg-[#0a0a0f]"
               />
             ))}
           </div>
         ) : usersData?.users?.length > 0 ? (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/10 text-left text-xs text-slate-400">
-                    <th className="pb-3 pr-4">Wallet</th>
-                    <th className="pb-3 pr-4">Username</th>
-                    <th className="pb-3 pr-4">Email</th>
-                    <th className="pb-3 pr-4">Staked</th>
-                    <th className="pb-3 pr-4">Activities</th>
-                    <th className="pb-3 pr-4">Status</th>
-                    <th className="pb-3 text-right">Actions</th>
-                  </tr>
-                </thead>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/10 text-left text-xs text-white/60">
+                      <th className="pb-3 pr-2 sm:pr-4">Wallet</th>
+                      <th className="pb-3 pr-2 sm:pr-4 hidden sm:table-cell">Username</th>
+                      <th className="pb-3 pr-2 sm:pr-4 hidden md:table-cell">Email</th>
+                      <th className="pb-3 pr-2 sm:pr-4">Staked</th>
+                      <th className="pb-3 pr-2 sm:pr-4 hidden lg:table-cell">Activities</th>
+                      <th className="pb-3 pr-2 sm:pr-4">Status</th>
+                      <th className="pb-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
                 <tbody>
                   {usersData.users.map((user: User) => (
                     <tr
                       key={user.id}
                       className="border-b border-white/5 text-sm hover:bg-white/5"
                     >
-                      <td className="py-3 pr-4">
+                      <td className="py-3 pr-2 sm:pr-4">
                         <div className="font-mono text-xs text-white">
-                          {user.walletAddress.slice(0, 6)}...
-                          {user.walletAddress.slice(-4)}
+                          <span className="hidden sm:inline">
+                            {user.walletAddress.slice(0, 6)}...
+                            {user.walletAddress.slice(-4)}
+                          </span>
+                          <span className="sm:hidden">
+                            {user.walletAddress.slice(0, 4)}...
+                            {user.walletAddress.slice(-2)}
+                          </span>
                         </div>
                       </td>
-                      <td className="py-3 pr-4 text-slate-300">
+                      <td className="py-3 pr-2 sm:pr-4 text-white/70 hidden sm:table-cell">
                         {user.username || "—"}
                       </td>
-                      <td className="py-3 pr-4 text-slate-300">
+                      <td className="py-3 pr-2 sm:pr-4 text-white/70 hidden md:table-cell">
                         {user.email || "—"}
                       </td>
-                      <td className="py-3 pr-4 text-white">
-                        {user.totalStaked.toFixed(2)} SOL
+                      <td className="py-3 pr-2 sm:pr-4 text-white">
+                        <span className="text-xs sm:text-sm">{user.totalStaked.toFixed(2)} SOL</span>
                       </td>
-                      <td className="py-3 pr-4 text-slate-300">
+                      <td className="py-3 pr-2 sm:pr-4 text-white/70 hidden lg:table-cell">
                         {user._count.activities}
                       </td>
-                      <td className="py-3 pr-4">
-                        <div className="flex items-center gap-2">
+                      <td className="py-3 pr-2 sm:pr-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
                           {user.isAdmin && (
-                            <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] font-semibold text-rose-300">
+                            <span className="rounded-full bg-red-500/20 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-red-400">
                               Admin
                             </span>
                           )}
                           {user.isActive ? (
-                            <span className="rounded-full bg-green-500/20 px-2 py-0.5 text-[10px] font-semibold text-green-300">
+                            <span className="rounded-full bg-green-500/20 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-green-400">
                               Active
                             </span>
                           ) : (
-                            <span className="rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] font-semibold text-slate-300">
+                            <span className="rounded-full bg-white/10 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-white/60">
                               Inactive
                             </span>
                           )}
                         </div>
                       </td>
                       <td className="py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1 sm:gap-2 flex-wrap">
                           <button
                             onClick={() => setSelectedUser(user)}
-                            className="rounded-lg border border-white/10 bg-slate-950/50 px-3 py-1 text-xs text-white transition hover:border-sky-300/50"
+                            className="rounded-lg border border-white/10 bg-[#0a0a0f] px-2 sm:px-3 py-1 text-[10px] sm:text-xs text-white transition hover:border-blue-500/50"
                           >
                             View
                           </button>
@@ -276,15 +283,16 @@ export default function AdminPage() {
                                 isActive: !user.isActive,
                               })
                             }
-                            className="rounded-lg border border-white/10 bg-slate-950/50 px-3 py-1 text-xs text-white transition hover:border-sky-300/50"
+                            className="rounded-lg border border-white/10 bg-[#0a0a0f] px-2 sm:px-3 py-1 text-[10px] sm:text-xs text-white transition hover:border-blue-500/50"
                           >
-                            {user.isActive ? "Deactivate" : "Activate"}
+                            <span className="hidden sm:inline">{user.isActive ? "Deactivate" : "Activate"}</span>
+                            <span className="sm:hidden">{user.isActive ? "Off" : "On"}</span>
                           </button>
                           <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs text-red-300 transition hover:border-red-500/50"
+                            className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 sm:px-3 py-1 text-[10px] sm:text-xs text-red-400 transition hover:border-red-500/50"
                           >
-                            Delete
+                            Del
                           </button>
                         </div>
                       </td>
@@ -292,12 +300,13 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {/* Pagination */}
             {usersData.pagination && (
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-xs text-slate-400">
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <p className="text-xs text-white/60">
                   Page {usersData.pagination.page} of{" "}
                   {usersData.pagination.totalPages} (
                   {usersData.pagination.total} total)
@@ -306,7 +315,7 @@ export default function AdminPage() {
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="rounded-lg border border-white/10 bg-slate-950/50 px-3 py-1 text-xs text-white transition hover:border-sky-300/50 disabled:opacity-50"
+                    className="rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-1 text-xs text-white transition hover:border-blue-500/50 disabled:opacity-50"
                   >
                     Previous
                   </button>
@@ -317,7 +326,7 @@ export default function AdminPage() {
                       )
                     }
                     disabled={page === usersData.pagination.totalPages}
-                    className="rounded-lg border border-white/10 bg-slate-950/50 px-3 py-1 text-xs text-white transition hover:border-sky-300/50 disabled:opacity-50"
+                    className="rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-1 text-xs text-white transition hover:border-blue-500/50 disabled:opacity-50"
                   >
                     Next
                   </button>
@@ -326,7 +335,7 @@ export default function AdminPage() {
             )}
           </>
         ) : (
-          <p className="py-8 text-center text-sm text-slate-400">
+          <p className="py-8 text-center text-sm text-white/60">
             No users found
           </p>
         )}
@@ -354,10 +363,10 @@ function StatCard({
   change: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-slate-900/50 p-4">
-      <p className="text-xs text-slate-400">{label}</p>
+    <div className="rounded-xl border border-white/10 bg-[#111118] p-4">
+      <p className="text-xs text-white/60">{label}</p>
       <p className="mt-2 text-2xl font-bold text-white">{value}</p>
-      <p className="mt-1 text-xs text-slate-500">{change}</p>
+      <p className="mt-1 text-xs text-white/50">{change}</p>
     </div>
   );
 }
@@ -382,12 +391,12 @@ function UserDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-2xl rounded-xl border border-white/10 bg-slate-900 p-6">
+      <div className="w-full max-w-2xl rounded-xl border border-white/10 bg-[#111118] p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-white">User Details</h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white"
+            className="text-white/60 hover:text-white"
           >
             ✕
           </button>
@@ -395,29 +404,29 @@ function UserDetailModal({
 
         <div className="space-y-4">
           <div>
-            <label className="text-xs text-slate-400">Wallet Address</label>
+            <label className="text-xs text-white/60">Wallet Address</label>
             <p className="mt-1 font-mono text-sm text-white">
               {user.walletAddress}
             </p>
           </div>
 
           <div>
-            <label className="text-xs text-slate-400">Email</label>
+            <label className="text-xs text-white/60">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white focus:border-sky-300/50 focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-blue-500/50 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="text-xs text-slate-400">Username</label>
+            <label className="text-xs text-white/60">Username</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white focus:border-sky-300/50 focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-blue-500/50 focus:outline-none"
             />
           </div>
 
@@ -444,25 +453,25 @@ function UserDetailModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-slate-400">Total Staked</label>
-              <p className="mt-1 text-sm text-white">
-                {user.totalStaked.toFixed(2)} SOL
-              </p>
-            </div>
-            <div>
-              <label className="text-xs text-slate-400">Total Rewards</label>
-              <p className="mt-1 text-sm text-white">
-                {user.totalRewards.toFixed(2)} SOL
-              </p>
-            </div>
-            <div>
-              <label className="text-xs text-slate-400">Activities</label>
-              <p className="mt-1 text-sm text-white">
-                {user._count.activities}
-              </p>
-            </div>
-            <div>
-              <label className="text-xs text-slate-400">User Data</label>
+            <label className="text-xs text-white/60">Total Staked</label>
+            <p className="mt-1 text-sm text-white">
+              {user.totalStaked.toFixed(2)} SOL
+            </p>
+          </div>
+          <div>
+            <label className="text-xs text-white/60">Total Rewards</label>
+            <p className="mt-1 text-sm text-white">
+              {user.totalRewards.toFixed(2)} SOL
+            </p>
+          </div>
+          <div>
+            <label className="text-xs text-white/60">Activities</label>
+            <p className="mt-1 text-sm text-white">
+              {user._count.activities}
+            </p>
+          </div>
+          <div>
+            <label className="text-xs text-white/60">User Data</label>
               <p className="mt-1 text-sm text-white">{user._count.userData}</p>
             </div>
           </div>
@@ -470,13 +479,13 @@ function UserDetailModal({
           <div className="flex justify-end gap-2 pt-4">
             <button
               onClick={onClose}
-              className="rounded-lg border border-white/10 bg-slate-950/50 px-4 py-2 text-sm text-white transition hover:border-sky-300/50"
+              className="rounded-lg border border-white/10 bg-[#0a0a0f] px-4 py-2 text-sm text-white transition hover:border-blue-500/50"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="rounded-lg border border-sky-300/50 bg-sky-500/20 px-4 py-2 text-sm font-semibold text-sky-300 transition hover:bg-sky-500/30"
+              className="rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-2 text-sm font-semibold text-blue-400 transition hover:bg-blue-500/30"
             >
               Save Changes
             </button>

@@ -1,4 +1,5 @@
 import type { PoolConfig } from "../types";
+import type { ValidatorInfo } from "./validator-service";
 
 export type PoolKey = "SOL" | "DRMR";
 
@@ -28,6 +29,28 @@ export class StakingService {
     const apy = pool === "SOL" ? 0.078 : 0.154;
     const weekly = (amount * (apy / 52)).toFixed(pool === "SOL" ? 2 : 0);
     return pool === "SOL" ? `${weekly} SOL` : `${weekly} DRMR`;
+  }
+
+  /**
+   * Estimate rewards for a specific validator
+   */
+  estimateValidatorRewards(amount: number, validator: ValidatorInfo, days: number = 7): number {
+    // Calculate rewards: amount * (apy / 100) * (days / 365)
+    return amount * (validator.apy / 100) * (days / 365);
+  }
+
+  /**
+   * Format validator APY for display
+   */
+  formatAPY(apy: number): string {
+    return `${apy.toFixed(2)}%`;
+  }
+
+  /**
+   * Calculate annual return for a stake amount
+   */
+  calculateAnnualReturn(amount: number, apy: number): number {
+    return amount * (apy / 100);
   }
 }
 

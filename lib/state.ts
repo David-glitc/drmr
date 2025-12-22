@@ -17,3 +17,6 @@ export const activePoolAtom = atom<PoolKey>("SOL");
 export const poolConfigAtom = atom<PoolConfig>(initialPool);
 export const estimatedRewardsAtom = atom<string>(initialRewards);
 
+// Re-export networkAtom from state/atoms for backward compatibility
+export { networkAtom } from "./state/atoms";
+

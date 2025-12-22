@@ -29,6 +29,7 @@ model User {
   // Relations
   activities       UserActivity[]
   userData        UserData[]
+  stakingRecords   StakingRecord[]
   
   @@index([walletAddress])
   @@index([isAdmin])
@@ -98,5 +99,62 @@ model AdminSession {
   @@index([userId])
   @@index([token])
   @@index([expiresAt])
+}
+
+model Validator {
+  id              String   @id @default(cuid())
+  voteAccount     String   @unique
+  identity        String
+  name            String
+  network         String   @default("devnet") // "devnet" or "mainnet-beta"
+  apy             Float
+  commission      Float
+  activatedStake  BigInt
+  epochCredits    BigInt
+  lastVote        BigInt
+  rootSlot        BigInt
+  delinquent      Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  lastSyncedAt    DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  stakingRecords  StakingRecord[]
+  
+  @@index([voteAccount])
+  @@index([network])
+  @@index([apy])
+  @@index([isActive])
+  @@index([lastSyncedAt])
+}
+
+model StakingRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  validatorId     String
+  validator       Validator @relation(fields: [validatorId], references: [id], onDelete: Restrict)
+  
+  // Staking details
+  amount          Float
+  stakeAccount    String?  // Solana stake account address
+  apy             Float    // APY at time of staking
+  status          String   @default("active") // "active", "delegating", "deactivated", "withdrawn"
+  
+  // Rewards tracking
+  totalRewards    Float    @default(0)
+  lastRewardEpoch BigInt?
+  
+  // Timestamps
+  stakedAt        DateTime @default(now())
+  unstakedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([validatorId])
+  @@index([status])
+  @@index([stakedAt])
 }
 

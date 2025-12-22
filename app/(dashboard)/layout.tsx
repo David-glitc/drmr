@@ -2,83 +2,52 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { navItems, settingsNav } from "../../lib/nav";
 import { useWallet } from "../../hooks/useWallet";
 import { useSolanaAccount } from "../../hooks/useSolanaAccount";
 import { useSolPrice } from "../../hooks/useSolPrice";
+import { useTokenLogoCache } from "../../hooks/useTokenLogoCache";
+import { useConnectionReady } from "../../hooks/useConnectionReady";
 import { LoadingOverlay } from "../../components/LoadingOverlay";
+import { DashboardLoader } from "../../components/DashboardLoader";
 import { NetworkToggle } from "../../components/NetworkToggle";
+import { ReceiveModal } from "../../components/ReceiveModal";
+import { WalletBalanceSkeleton } from "../../components/Skeletons";
 
 const iconMap: Record<string, React.ReactElement> = {
   chart: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
-      <path
-        d="M5 17V11M10 17V7M15 17V13M20 17V5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M5 17V11M10 17V7M15 17V13M20 17V5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
   diamond: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
-      <path
-        d="M12 3l7 7-7 11-7-11 7-7z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 3l7 7-7 11-7-11 7-7z" strokeLinejoin="round" />
     </svg>
   ),
   arrows: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
-      <path
-        d="M7 7h10l-3-3m3 13H7l3 3"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M7 7h10l-3-3m3 13H7l3 3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
   coin: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
-      <ellipse cx="12" cy="6" rx="8" ry="3" stroke="currentColor" strokeWidth="2" />
-      <path
-        d="M4 6v8c0 1.66 3.58 3 8 3s8-1.34 8-3V6"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+      <ellipse cx="12" cy="6" rx="8" ry="3" />
+      <path d="M4 6v8c0 1.66 3.58 3 8 3s8-1.34 8-3V6" strokeLinecap="round" />
     </svg>
   ),
   doc: (
-    <svg viewBox="0 0 24 24" className="h-4 w-4 text-sky-300" fill="none">
-      <path
-        d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path d="M14 3v6h6" stroke="currentColor" strokeWidth="2" />
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z" />
+      <path d="M14 3v6h6" />
     </svg>
   ),
   gear: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none">
-      <path
-        d="M12 15a3 3 0 100-6 3 3 0 000 6z"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path
-        d="M19.4 15a7.97 7.97 0 000-6l-2.2-.4-1-2-2.2.4-1.1-2h-2.2l-1.1 2-2.2-.4-1 2-2.2.4a7.97 7.97 0 000 6l2.2.4 1 2 2.2-.4 1.1 2h2.2l1.1-2 2.2.4 1-2 2.2-.4z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+      <path d="M19.4 15a7.97 7.97 0 000-6l-2.2-.4-1-2-2.2.4-1.1-2h-2.2l-1.1 2-2.2-.4-1 2-2.2.4a7.97 7.97 0 000 6l2.2.4 1 2 2.2-.4 1.1 2h2.2l1.1-2 2.2.4 1-2 2.2-.4z" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
 };
@@ -89,227 +58,265 @@ export default function DashboardLayout({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const { walletAddress, isConnected, isConnecting, walletStatus, connect, disconnect } =
-    useWallet();
+  const { walletAddress, isConnected, isConnecting, connect, disconnect } = useWallet();
   const { data: solanaAccount, isLoading: solanaLoading } = useSolanaAccount(
     walletAddress ?? null
   );
   const { data: solPrice } = useSolPrice();
+  useTokenLogoCache(); // Initialize and cleanup token logo cache
+  const { isReady, isChecking } = useConnectionReady(); // Check if connection is ready
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  const [receiveModalOpen, setReceiveModalOpen] = useState(false);
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-white">
-      {/* Loading Overlay for Wallet Connection */}
-      <LoadingOverlay 
-        show={isConnecting} 
-        message="Connecting Wallet..."
-      />
+    <div className="relative min-h-screen bg-[#0a0a0f] text-white">
+      {/* Dashboard Loader - Shows until connection is established */}
+      <DashboardLoader isReady={isReady} isChecking={isChecking} />
+      
+      <LoadingOverlay show={isConnecting} message="Connecting Wallet..." />
 
-      <nav className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-slate-950/80 px-3 py-2 backdrop-blur sm:px-6">
-        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Left Sidebar */}
+      <aside
+        className={`fixed left-0 top-0 z-50 h-full w-64 transform border-r border-white/10 bg-[#0a0a0f] transition-transform duration-300 lg:translate-x-0 ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex h-full flex-col p-6">
+          {/* Logo */}
+          <Link href="/portfolio" className="mb-8 flex items-center gap-3">
+            <img 
+              src="/logo.jpg" 
+              alt="DRMR Logo" 
+              className="h-10 w-10 rounded-lg object-cover"
+            />
             <div>
-              <p className="text-[9px] uppercase tracking-[0.4em] text-rose-300">
-              DRMR
-            </p>
-            <p className="text-sm font-semibold text-white sm:text-base">
-              American Dream Dashboard
-            </p>
+              <h1 className="text-xl font-bold text-white">DRMR</h1>
+              <p className="text-xs text-white/60">Dashboard</p>
           </div>
-            <details className="lg:hidden">
-              <summary className="rounded-full border border-white/15 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.3em] text-white">
-                Menu
-              </summary>
-              <div className="mt-2 w-44 rounded-xl border border-white/10 bg-slate-900/95 p-2.5 text-[11px] text-white shadow-xl">
-                {navItems.map((item) => (
+          </Link>
+
+          {/* Navigation */}
+          <nav className="flex-1 space-y-1">
+            {navItems.map((item) => {
+              const active = pathname === item.href;
+              return (
                   <Link
                     key={item.key}
                     href={item.href}
-                    className={`flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 transition ${
-                      pathname === item.href
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
+                    active
                         ? "bg-white/10 text-white"
-                        : "text-slate-200 hover:bg-white/5"
+                      : "text-white/70 hover:bg-white/5 hover:text-white"
                     }`}
                   >
+                  <span className={active ? "text-blue-500" : "text-white/50"}>
                     {iconMap[item.icon]}
+                  </span>
                     {item.label}
                   </Link>
-                ))}
+              );
+            })}
+          </nav>
+
+          {/* Settings Link */}
                 <Link
                   href={settingsNav.href}
-                  className={`mt-1.5 flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 transition ${
+            onClick={() => setMobileMenuOpen(false)}
+            className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
                     pathname === settingsNav.href
                       ? "bg-white/10 text-white"
-                      : "text-slate-200 hover:bg-white/5"
+                : "text-white/70 hover:bg-white/5 hover:text-white"
                   }`}
                 >
+            <span className={pathname === settingsNav.href ? "text-blue-500" : "text-white/50"}>
                   {iconMap[settingsNav.icon]}
+            </span>
                   {settingsNav.label}
                 </Link>
               </div>
-            </details>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="lg:pl-64">
+        {/* Top Header Bar */}
+        <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0a0a0f]">
+          <div className="flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4 lg:px-6">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden rounded-lg p-2 text-white/70 hover:bg-white/10 hover:text-white"
+            >
+              <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            {/* Right Side - Wallet Info */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="hidden sm:block">
+                <NetworkToggle />
           </div>
 
-          <div className="flex items-center gap-2 text-[10px] text-slate-400">
             {isConnected && walletAddress ? (
               <div className="relative">
-                <details className="group">
-                  <summary className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/20 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white">
+                  <button
+                    onClick={() => setWalletMenuOpen(!walletMenuOpen)}
+                    className="flex items-center gap-1.5 sm:gap-2 rounded-lg border border-white/10 bg-white/5 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:bg-white/10"
+                  >
+                    <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500" />
+                    <span className="hidden sm:inline">
                     {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
-                    <span className="text-[10px] text-slate-400">▾</span>
-                  </summary>
-                  <div className="absolute right-0 mt-1.5 w-56 rounded-xl border border-white/10 bg-slate-900/95 p-3.5 text-[10px] text-white shadow-2xl">
-                    <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2.5">
+                    </span>
+                    <span className="sm:hidden text-[10px]">MW</span>
+                    <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Wallet Dropdown */}
+                  {walletMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setWalletMenuOpen(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-sm rounded-xl border border-white/10 bg-[#111118] p-4 z-20">
+                        <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
                       <div>
-                        <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400">
-                          Connected Wallet
-                        </p>
-                        <p className="mt-0.5 text-xs font-semibold text-white">
-                          {walletAddress.slice(0, 6)}...{walletAddress.slice(-6)}
+                            <p className="text-xs text-white/60">Connected Wallet</p>
+                            <p className="mt-1 font-mono text-sm font-semibold text-white">
+                              {walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}
                         </p>
                       </div>
                       <button
-                        onClick={() =>
-                          void navigator.clipboard.writeText(walletAddress)
-                        }
-                        className="cursor-pointer rounded-full border border-white/20 p-1.5 text-white transition-all duration-200 hover:scale-110 hover:border-white active:scale-95"
-                        aria-label="Copy address"
+                            onClick={() => {
+                              void navigator.clipboard.writeText(walletAddress);
+                              setWalletMenuOpen(false);
+                            }}
+                            className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white"
                       >
-                        <svg
-                          viewBox="0 0 24 24"
-                          className="h-3 w-3"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                        >
-                          <rect x="9" y="9" width="11" height="11" rx="2" />
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
                       </button>
                     </div>
-                    <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-2.5 text-[10px] text-slate-200">
+
                       {solanaLoading ? (
-                        <p>Fetching on-chain data…</p>
+                          <WalletBalanceSkeleton />
                       ) : solanaAccount ? (
-                        <>
-                          <p>
-                            <span className="text-sky-300">
+                          <div className="mb-4 rounded-lg bg-white/5 p-3">
+                            <p className="text-sm text-white">
+                              <span className="text-blue-500">
                               {solanaAccount.balanceSol.toFixed(4)} SOL
                             </span>
                             {solPrice && (
-                              <span className="text-slate-300">
-                                {" "}
-                                •{" "}
-                                {(solanaAccount.balanceSol * solPrice).toLocaleString(
-                                  "en-US",
-                                  {
+                                <span className="ml-2 text-white/60">
+                                  • ${(solanaAccount.balanceSol * solPrice).toLocaleString("en-US", {
                                     style: "currency",
                                     currency: "USD",
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
-                                  }
-                                )}
+                                  }).replace("$", "")}
                               </span>
                             )}
-                            <span> • slot #{solanaAccount.slot}</span>
                           </p>
-                          <p className="mt-0.5 text-[9px] text-slate-400">
-                            Rent epoch {solanaAccount.rentEpoch ?? "—"}
-                            {solanaAccount.executable ? " • Executable" : ""}
+                            <p className="mt-1 text-xs text-white/40">
+                              Slot #{solanaAccount.slot}
                           </p>
-                        </>
-                      ) : (
-                        <p>No on-chain data found.</p>
-                      )}
                     </div>
-                    <div className="mt-3 flex gap-1.5">
+                        ) : null}
+
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => {
+                              console.log("[Layout] Receive button clicked, opening modal");
+                              setReceiveModalOpen(true);
+                              setWalletMenuOpen(false);
+                            }}
+                            className="w-full rounded-lg border-2 border-blue-500 bg-red-500 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-red-600 flex items-center justify-center gap-2"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Receive
+                          </button>
+                          <div className="flex gap-2">
                       <a
                         href={`https://explorer.solana.com/address/${walletAddress}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 cursor-pointer rounded-full border border-white/20 px-2.5 py-1.5 text-center text-[9px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white"
+                              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-center text-xs font-medium text-white transition-colors hover:bg-white/10"
                       >
                         Explorer
                       </a>
                       <button
-                        className="flex-1 cursor-pointer rounded-full border border-white/20 px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white"
-                        onClick={disconnect}
-                      >
-                        Sign out
+                              onClick={() => {
+                                disconnect();
+                                setWalletMenuOpen(false);
+                              }}
+                              className="flex-1 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/20"
+                            >
+                              Disconnect
                       </button>
                     </div>
                   </div>
-                </details>
+                      </div>
+                    </>
+                  )}
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <NetworkToggle />
                 <button
-                  className="cursor-pointer rounded-full border border-white/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={() => connect()}
                   disabled={isConnecting}
+                  className="rounded-lg border border-blue-500/50 bg-blue-500/10 px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/20 disabled:opacity-50"
                 >
-                  {isConnecting ? "Connecting..." : "Connect Wallet"}
+                  <span className="hidden sm:inline">{isConnecting ? "Connecting..." : "Connect Wallet"}</span>
+                  <span className="sm:hidden">{isConnecting ? "..." : "Connect"}</span>
                 </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+              )}
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[1600px] gap-3 px-4 pb-20 pt-24 sm:px-6 sm:pt-26 lg:gap-4">
-        <aside className="fixed left-4 top-24 hidden h-[calc(100vh-6rem)] w-64 flex-col rounded-2xl border border-white/10 bg-slate-900/85 p-5 backdrop-blur lg:left-6 lg:flex">
-          <p className="text-xs uppercase tracking-[0.35em] text-sky-200/80">
-            Console
-          </p>
-          <h2 className="mt-2 text-xl font-semibold text-white">
-            American Dream
-          </h2>
-          <nav className="mt-8 flex flex-col gap-3">
-            {navItems.map((item) => {
-              const active = pathname === item.href;
-              return (
+              {/* Settings Icon */}
                 <Link
-                  key={item.key}
-                  href={item.href}
-                  className={`flex cursor-pointer items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-semibold transition ${
-                    active
-                      ? "border-sky-300/60 text-white"
-                      : "border-white/10 text-slate-200 hover:border-sky-300/40 hover:text-white"
-                  }`}
+                href="/settings"
+                className="rounded-lg p-1.5 sm:p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
                 >
-                  <span className="flex items-center gap-3">
-                    {iconMap[item.icon]}
-                    {item.label}
-                  </span>
-                  <span className="text-xs text-sky-300/80">
-                    ⌘{item.label[0]}
-                  </span>
+                <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
                 </Link>
-              );
-            })}
-          </nav>
-          <div className="mt-auto pt-6">
-            <Link
-              href={settingsNav.href}
-              className={`flex cursor-pointer items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-semibold transition ${
-                pathname === settingsNav.href
-                  ? "border-sky-300/60 text-white"
-                  : "border-white/10 text-slate-200 hover:border-sky-300/40 hover:text-white"
-              }`}
-            >
-              <span className="flex items-center gap-3">
-                {iconMap[settingsNav.icon]}
-                {settingsNav.label}
-              </span>
-              <span className="text-xs text-sky-300/80">⌘S</span>
-            </Link>
+            </div>
           </div>
-        </aside>
-        <main className="flex w-full min-w-0 flex-col gap-8 sm:gap-10 lg:pl-[17rem]">
+        </header>
+
+        {/* Page Content */}
+        <main className="min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)] p-3 sm:p-4 lg:p-6 xl:p-8">
           {children}
         </main>
+
+        {/* Receive Modal */}
+        {isConnected && walletAddress && (
+          <ReceiveModal
+            isOpen={receiveModalOpen}
+            onClose={() => {
+              console.log("[Layout] Closing receive modal");
+              setReceiveModalOpen(false);
+            }}
+            walletAddress={walletAddress}
+            tokenSymbol="SOL"
+          />
+        )}
       </div>
     </div>
   );
 }
-

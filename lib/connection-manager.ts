@@ -20,17 +20,47 @@ class ConnectionManager {
   private defaultCommitment: CommitmentLevel = "confirmed";
 
   constructor() {
-    this.defaultEndpoint =
+    // Initialize based on NEXT_PUBLIC_MODE or default to devnet
+    const mode = process.env.NEXT_PUBLIC_MODE?.toLowerCase();
+    const initialNetwork: Network = 
+      mode === "mainnet" || mode === "mainnet-beta" ? "mainnet-beta" :
+      mode === "testnet" ? "testnet" :
+      "devnet";
+    
+    this.defaultEndpoint = this.getRpcEndpoint(initialNetwork);
+    console.log(`[ConnectionManager] Initialized with network: ${initialNetwork} from NEXT_PUBLIC_MODE=${mode || "not set"}`);
+  }
+
+  /**
+   * Get RPC endpoint for a specific network
+   */
+  private getRpcEndpoint(network: Network): string {
+    if (network === "mainnet-beta") {
+      return (
+        process.env.NEXT_PUBLIC_SOLANA_RPC_MAINNET ??
+        process.env.NEXT_PUBLIC_SOLANA_RPC ??
+        clusterApiUrl("mainnet-beta")
+      );
+    } else if (network === "devnet") {
+      return (
+        process.env.NEXT_PUBLIC_SOLANA_RPC_DEVNET ??
+        process.env.NEXT_PUBLIC_SOLANA_RPC ??
+        clusterApiUrl("devnet")
+      );
+    } else {
+      return (
       process.env.NEXT_PUBLIC_SOLANA_RPC ??
-      process.env.SOLANA_RPC ??
-      clusterApiUrl("devnet");
+        clusterApiUrl("testnet")
+      );
+    }
   }
 
   /**
    * Update default endpoint for network switching
    */
   setNetwork(network: Network): void {
-    this.defaultEndpoint = clusterApiUrl(network);
+    this.defaultEndpoint = this.getRpcEndpoint(network);
+    console.log(`[ConnectionManager] Network set to ${network}, using endpoint:`, this.defaultEndpoint);
     // Clear existing connections to force new ones with new endpoint
     this.closeAll();
   }
@@ -75,7 +105,7 @@ class ConnectionManager {
    * Get connection for a specific network
    */
   getNetworkConnection(network: Network): Connection {
-    const endpoint = clusterApiUrl(network);
+    const endpoint = this.getRpcEndpoint(network);
     return this.getConnection({ endpoint });
   }
 

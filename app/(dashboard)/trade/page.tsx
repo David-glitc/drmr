@@ -8,14 +8,13 @@ import {
   Tooltip,
   XAxis,
 } from "recharts";
-import { useJupiterQuote } from "@/hooks/useJupiterQuote";
-import { TOKEN_MINTS } from "@/lib/services/jupiter-service";
+import { useJupiterQuote } from "../../../hooks/useJupiterQuote";
+import { TOKEN_MINTS } from "../../../lib/services/jupiter-service";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { ChartSkeleton } from "../../../components/Skeletons";
 
-// TODO: Replace with actual DRMR mint address when available
 const DRMR_MINT = "YOUR_DRMR_MINT_ADDRESS_HERE";
 
-// Mock price series data - TODO: Replace with real price data from Jupiter or other price API
 const priceSeries = [
   { label: "9:00", value: 0.061 },
   { label: "10:00", value: 0.064 },
@@ -28,25 +27,21 @@ const priceSeries = [
 export default function TradePage() {
   const [sendValue, setSendValue] = useState("");
   
-  // Convert SOL amount to lamports for Jupiter API
   const solAmountLamports = useMemo(() => {
     if (!sendValue || parseFloat(sendValue) <= 0) return "0";
     return Math.floor(parseFloat(sendValue) * LAMPORTS_PER_SOL).toString();
   }, [sendValue]);
 
-  // Fetch quote from Jupiter
   const { data: quote, isLoading: isQuoteLoading } = useJupiterQuote({
     inputMint: TOKEN_MINTS.SOL,
-    outputMint: DRMR_MINT || TOKEN_MINTS.USDC, // Fallback to USDC if DRMR not set
+    outputMint: DRMR_MINT || TOKEN_MINTS.USDC,
     amount: solAmountLamports,
-    slippageBps: 50, // 0.5% slippage
+    slippageBps: 50,
     enabled: parseFloat(sendValue) > 0 && !!DRMR_MINT,
   });
 
-  // Calculate output amount
   const outputAmount = useMemo(() => {
     if (!quote?.outAmount) return "0.00";
-    // TODO: Get DRMR decimals (typically 6 or 9)
     const decimals = 6;
     return (parseInt(quote.outAmount) / Math.pow(10, decimals)).toFixed(2);
   }, [quote]);
@@ -56,40 +51,49 @@ export default function TradePage() {
     : "0.00";
 
   return (
-    <>
-      <header className="rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-sky-200 sm:text-xs">
-          Trade
-        </p>
-        <h1 className="mt-1.5 text-xl font-semibold text-white sm:text-2xl">
-          Swap DRMR / SOL
-        </h1>
-        <p className="mt-1.5 max-w-2xl text-xs text-slate-300 sm:text-sm">
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">Trade</h1>
+        <p className="text-xs sm:text-sm text-white/60">
           Powered by Jupiter Aggregator. Get the best swap rates across all Solana DEXs.
         </p>
-      </header>
+      </div>
 
-      <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-4 sm:p-5">
-          <div className="space-y-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1.4fr_1fr]">
+        {/* Swap Interface */}
+        <div className="rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6">
+          <div className="space-y-4">
+            {/* You Send */}
             <div>
-              <label className="text-xs text-slate-300">You send</label>
-              <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2.5">
+              <label className="text-sm text-white/70 mb-2 block">You send</label>
+              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3">
                 <input
                   type="number"
                   value={sendValue}
-                  onChange={(event) => setSendValue(event.target.value)}
+                  onChange={(e) => setSendValue(e.target.value)}
                   placeholder="0.00"
-                  className="w-full bg-transparent text-lg font-semibold text-white outline-none placeholder:text-slate-500"
+                  className="w-full bg-transparent text-lg font-semibold text-white outline-none placeholder:text-white/40"
                 />
-                <span className="text-xs font-semibold text-white">SOL</span>
+                <span className="text-sm font-semibold text-white">SOL</span>
               </div>
             </div>
+
+            {/* Swap Arrow */}
+            <div className="flex justify-center">
+              <div className="rounded-full border border-white/10 bg-[#0a0a0f] p-2">
+                <svg className="h-5 w-5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+              </div>
+            </div>
+
+            {/* You Receive */}
             <div>
-              <label className="text-xs text-slate-300">You receive</label>
-              <div className="mt-1.5 rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-lg font-semibold text-white">
+              <label className="text-sm text-white/70 mb-2 block">You receive</label>
+              <div className="rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-lg font-semibold text-white">
                 {isQuoteLoading ? (
-                  <span className="text-slate-400">Calculating...</span>
+                  <div className="h-6 w-32 bg-white/10 rounded animate-pulse" />
                 ) : (
                   <>
                     {Number(outputAmount).toLocaleString(undefined, {
@@ -101,18 +105,22 @@ export default function TradePage() {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button 
                 disabled={!quote || isQuoteLoading || parseFloat(sendValue) <= 0}
-                className="cursor-pointer rounded-xl bg-rose-500 px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-rose-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-xl bg-red-500 px-4 py-3 text-xs sm:text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isQuoteLoading ? "Loading..." : "Execute swap"}
               </button>
-              <button className="cursor-pointer rounded-xl border border-white/20 px-3 py-2.5 text-xs font-semibold text-white transition hover:border-white">
+              <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs sm:text-sm font-semibold text-white transition hover:bg-white/10">
                 Limit order
               </button>
             </div>
-            <div className="rounded-xl border border-white/10 bg-slate-950/60 p-3 text-xs text-slate-300">
+
+            {/* Swap Details */}
+            <div className="rounded-xl border border-white/10 bg-[#0a0a0f] p-4 space-y-2 text-xs text-white/70">
               <div className="flex justify-between">
                 <span>Slippage Guard</span>
                 <span className="text-white">0.50%</span>
@@ -121,7 +129,7 @@ export default function TradePage() {
                 <>
                   <div className="flex justify-between">
                     <span>Price Impact</span>
-                    <span className={parseFloat(priceImpact) > 1 ? "text-rose-400" : "text-white"}>
+                    <span className={parseFloat(priceImpact) > 1 ? "text-red-400" : "text-white"}>
                       {priceImpact}%
                     </span>
                   </div>
@@ -143,37 +151,30 @@ export default function TradePage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-4 sm:p-5">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-sky-200 sm:text-xs">
-            DRMR Price
-          </p>
-          <div className="mt-3 h-40 sm:mt-4 sm:h-52">
+        {/* Price Chart */}
+        <div className="rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6">
+          <p className="text-xs text-white/60 mb-4">DRMR Price</p>
+          <div className="h-40 sm:h-52">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={priceSeries}>
-                <defs>
-                  <linearGradient id="price" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
                 <XAxis dataKey="label" stroke="#94a3b8" />
                 <Tooltip
-                  contentStyle={{ background: "#0f172a", border: "1px solid #334155" }}
+                  contentStyle={{ background: "#111118", border: "1px solid rgba(255,255,255,0.1)" }}
                   labelStyle={{ color: "#e2e8f0" }}
                 />
                 <Area
                   type="monotone"
                   dataKey="value"
-                  stroke="#f43f5e"
-                  fill="url(#price)"
+                  stroke="#ef4444"
+                    fill="#3b82f6"
+                    fillOpacity={0.2}
                   strokeWidth={3}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </div>
   );
 }
-

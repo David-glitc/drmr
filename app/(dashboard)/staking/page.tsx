@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   Area,
   AreaChart,
@@ -11,11 +12,20 @@ import {
 
 import { useAnalytics } from "../../../hooks/useAnalytics";
 import { useStaking } from "../../../hooks/useStaking";
+import { useWallet } from "../../../hooks/useWallet";
+import { useSolanaAccount } from "../../../hooks/useSolanaAccount";
+import { useValidators } from "../../../hooks/useValidators";
+import { useStakingRecords } from "../../../hooks/useStakingRecords";
+import { useSolanaStaking } from "../../../hooks/useSolanaStaking";
+import { useSolPrice } from "../../../hooks/useSolPrice";
+import { ReceiveModal } from "../../../components/ReceiveModal";
+import { stakingService } from "../../../lib/services";
+import type { ValidatorInfo } from "../../../lib/services/validator-service";
 
 const fallbackAllocation = [
-  { label: "SOL Stakers", value: 54, fill: "#38bdf8" },
-  { label: "DRMR Stakers", value: 38, fill: "#f43f5e" },
-  { label: "Idle Liquidity", value: 8, fill: "#fbbf24" },
+  { label: "SOL Stakers", value: 54, fill: "#3b82f6" },
+  { label: "DRMR Stakers", value: 38, fill: "#ef4444" },
+  { label: "Idle Liquidity", value: 8, fill: "#3b82f6" },
 ];
 
 const fallbackApy = [
@@ -27,130 +37,465 @@ const fallbackApy = [
 
 export default function StakingPage() {
   const { allocation } = useAnalytics();
-  const { activePool, poolConfig, estimatedRewards, switchPool, estimateRewards } =
-    useStaking();
+  const { activePool, poolConfig, estimatedRewards, estimateRewards } = useStaking();
+  const { walletAddress, isConnected } = useWallet();
+  const { data: solanaAccount } = useSolanaAccount(walletAddress ?? null);
+  const { data: solPrice } = useSolPrice();
+  const { validators, isLoading: validatorsLoading } = useValidators(true); // Sync with DB
+  const { createStakingRecord, isCreating: isCreatingStake } = useStakingRecords();
+  const { createAndDelegateStake, getStakeBalance, isReady: isStakingReady } = useSolanaStaking();
+  
+  const [stakeAmount, setStakeAmount] = useState("");
+  const [selectedValidator, setSelectedValidator] = useState<string>("");
+  const [isStakeModalOpen, setIsStakeModalOpen] = useState(false);
+  const [receiveModalOpen, setReceiveModalOpen] = useState(false);
+  const [isStaking, setIsStaking] = useState(false);
+  const [stakingError, setStakingError] = useState<string | null>(null);
+  const [stakingSuccess, setStakingSuccess] = useState<string | null>(null);
+  
+  // Set default validator when validators load
+  useEffect(() => {
+    if (validators.length > 0 && !selectedValidator) {
+      setSelectedValidator(validators[0].voteAccount);
+    }
+  }, [validators, selectedValidator]);
+  
+  const selectedValidatorInfo = validators.find(v => v.voteAccount === selectedValidator) as (ValidatorInfo & { id?: string }) | undefined;
+  
+  const minStakeAmount = 0.012306085;
+  const hasInsufficientBalance = solanaAccount 
+    ? solanaAccount.balanceSol < minStakeAmount 
+    : true;
+  const canStake = stakeAmount && parseFloat(stakeAmount) >= minStakeAmount && !hasInsufficientBalance;
+  
+  // Calculate annual return based on selected validator
+  const annualReturn = selectedValidatorInfo && stakeAmount
+    ? stakingService.calculateAnnualReturn(parseFloat(stakeAmount), selectedValidatorInfo.apy)
+    : 0;
 
   return (
-    <>
-      <header className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-4 backdrop-blur sm:px-6 sm:py-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="space-y-6">
+      {/* Header */}
           <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-sky-300/80 sm:text-xs">
-              Epoch Control
+        <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">Staking</h1>
+        <p className="text-xs sm:text-sm text-white/60">Stake your tokens to steadily earn rewards</p>
+      </div>
+
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1fr_400px]">
+        {/* Main Content */}
+        <div className="rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-8 lg:p-12">
+          <div className="flex flex-col items-center justify-center text-center min-h-[300px] sm:min-h-[400px]">
+            {/* Piggy Bank Illustration Placeholder */}
+            <div className="mb-6 sm:mb-8 w-32 h-32 sm:w-48 sm:h-48 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+              <svg className="w-20 h-20 sm:w-32 sm:h-32 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4 px-2">Earn with DRMR</h2>
+            <p className="text-sm sm:text-base text-white/70 mb-6 sm:mb-8 max-w-md px-2">
+              Stake your tokens to steadily earn rewards. You can stake SOL for your SOL.
             </p>
-            <h1 className="text-xl font-semibold text-white sm:text-2xl">
-              Staking Performance
-            </h1>
-            <p className="mt-1 max-w-2xl text-xs text-slate-300 sm:text-sm">
-              Inspect pool APYs, allocations, and simulate rewards with live
-              Recharts visualizations.
-            </p>
-          </div>
-          <div className="flex gap-1.5 rounded-full border border-white/10 bg-white/5 p-1 text-[10px] sm:text-xs">
-            {(["SOL", "DRMR"] as const).map((option) => (
+            
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full max-w-md px-2">
               <button
-                key={option}
-                onClick={() => switchPool(option)}
-                className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                  activePool === option
-                    ? "bg-white text-slate-900"
-                    : "text-slate-300"
-                }`}
+                onClick={() => setIsStakeModalOpen(true)}
+                className="flex-1 rounded-xl border border-white/10 bg-white/5 px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold text-white transition hover:bg-white/10"
               >
-                {option}
+                Stake now
               </button>
-            ))}
+              <button
+                onClick={() => setReceiveModalOpen(true)}
+                className="flex-1 rounded-xl border border-white/10 bg-white/5 px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold text-white transition hover:bg-white/10"
+              >
+                Receive
+              </button>
+            </div>
           </div>
         </div>
-      </header>
 
-      <section className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-        <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-4 sm:p-5">
-          <p className="text-xs text-slate-400">APY preview</p>
-          <h3 className="mt-1.5 text-2xl font-semibold text-white sm:text-3xl">
+        {/* Stake Modal/Sidebar */}
+        {isStakeModalOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+              onClick={() => setIsStakeModalOpen(false)}
+            />
+            <div className="fixed right-0 top-0 z-50 h-full w-full max-w-md border-l border-white/10 bg-[#111118] p-4 sm:p-6 overflow-y-auto lg:relative lg:z-auto lg:rounded-2xl lg:border lg:border-white/10">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-semibold text-white">Stake</h3>
+                <button
+                  onClick={() => setIsStakeModalOpen(false)}
+                  className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white transition"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Amount Input with Slider */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm text-white/70">Amount</label>
+                  <span className="text-xs text-white/60">
+                    Max: {solanaAccount?.balanceSol.toFixed(4) || "0"} SOL
+                  </span>
+                </div>
+                
+                {/* Percentage Buttons */}
+                <div className="flex items-center gap-2 mb-3">
+                  {[25, 50, 75].map((percent) => (
+                    <button
+                      key={percent}
+                      onClick={() => {
+                        if (solanaAccount) {
+                          const value = (solanaAccount.balanceSol * percent) / 100;
+                          setStakeAmount(value.toFixed(9).replace(/\.?0+$/, ""));
+                        }
+                      }}
+                      className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+                    >
+                      {percent}%
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => {
+                      if (solanaAccount) {
+                        setStakeAmount(solanaAccount.balanceSol.toFixed(9).replace(/\.?0+$/, ""));
+                      }
+                    }}
+                    className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-blue-400 transition hover:bg-white/10"
+                  >
+                    Max
+                  </button>
+                </div>
+
+                {/* Amount Display */}
+                <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 mb-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center overflow-hidden">
+                    <img
+                      src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png"
+                      alt="SOL"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.outerHTML = '<span class="text-xs font-semibold text-blue-400">SOL</span>';
+                      }}
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={stakeAmount}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                        setStakeAmount(value);
+                      }
+                    }}
+                    placeholder="0"
+                    className="flex-1 bg-transparent text-base font-semibold text-white outline-none placeholder:text-white/40"
+                  />
+                  {solPrice && stakeAmount && (
+                    <span className="text-xs text-white/60">
+                      ${(parseFloat(stakeAmount) * solPrice).toFixed(2)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Slider */}
+                {solanaAccount && solanaAccount.balanceSol > 0 && (
+                  <div className="relative">
+                    <input
+                      type="range"
+                      min="0"
+                      max={solanaAccount.balanceSol}
+                      step="0.01"
+                      value={stakeAmount || 0}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        setStakeAmount(value.toFixed(9).replace(/\.?0+$/, ""));
+                      }}
+                      className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#0a0a0f] [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-blue-500 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#0a0a0f] [&::-moz-range-thumb]:border-none"
+                      style={{
+                        background: solanaAccount.balanceSol > 0
+                          ? `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((parseFloat(stakeAmount || "0") / solanaAccount.balanceSol) * 100)}%, rgba(255,255,255,0.1) ${((parseFloat(stakeAmount || "0") / solanaAccount.balanceSol) * 100)}%, rgba(255,255,255,0.1) 100%)`
+                          : undefined
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Validator Selection */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <label className="text-sm text-white/70">Select Validator</label>
+                  <svg className="h-4 w-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                {validatorsLoading ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-20 w-full bg-white/10 rounded-xl animate-pulse" />
+                    ))}
+                  </div>
+                ) : validators.length === 0 ? (
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
+                    <p className="text-sm text-white/60">No validators available</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {validators.map((validator) => {
+                      const isSelected = validator.voteAccount === selectedValidator;
+                      return (
+                        <button
+                          key={validator.voteAccount}
+                          onClick={() => setSelectedValidator(validator.voteAccount)}
+                          className={`w-full rounded-xl border p-4 text-left transition ${
+                            isSelected
+                              ? "border-blue-500 bg-blue-500/10"
+                              : "border-white/10 bg-white/5 hover:bg-white/10"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="text-sm font-semibold text-white truncate">
+                                  {validator.name}
+                                </h4>
+                                {isSelected && (
+                                  <svg className="h-4 w-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-white/60">
+                                <span className="text-blue-400 font-semibold">
+                                  {stakingService.formatAPY(validator.apy)} APY
+                                </span>
+                                <span>•</span>
+                                <span>{validator.commission}% commission</span>
+                              </div>
+                              <p className="text-xs text-white/50 mt-1 truncate">
+                                {(validator.activatedStake / 1e9).toLocaleString(undefined, {
+                                  maximumFractionDigits: 2,
+                                })} SOL staked
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Annual Return */}
+              {selectedValidatorInfo && stakeAmount && (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-white/70">Annual return</span>
+                    <svg className="h-4 w-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-white">
+                    {annualReturn.toFixed(4)} SOL
+                  </p>
+                </div>
+              )}
+
+              {/* Total Stake */}
+              {selectedValidatorInfo && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-white/70">Total stake</span>
+                    <svg className="h-4 w-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-white">
+                    {(selectedValidatorInfo.activatedStake / 1e9).toLocaleString(undefined, {
+                      maximumFractionDigits: 2,
+                    })} SOL
+                  </p>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {hasInsufficientBalance && (
+                <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+                  <p className="text-sm font-semibold text-red-400 mb-1">Balance too low to stake</p>
+                  <p className="text-xs text-white/70">
+                    You need at least {minStakeAmount} SOL to start staking.
+                  </p>
+                </div>
+              )}
+
+              {/* Stake Button */}
+              {/* Success Message */}
+              {stakingSuccess && (
+                <div className="mb-4 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
+                  <p className="text-sm font-semibold text-green-400 mb-1">Staking Successful!</p>
+                  <p className="text-xs text-white/70">{stakingSuccess}</p>
+                </div>
+              )}
+              
+              {/* Error Message */}
+              {stakingError && (
+                <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+                  <p className="text-sm font-semibold text-red-400 mb-1">Staking Error</p>
+                  <p className="text-xs text-white/70">{stakingError}</p>
+                </div>
+              )}
+
+              {/* Stake Button */}
+              <button
+                onClick={async () => {
+                  if (!canStake || !selectedValidatorInfo || !walletAddress || !isStakingReady) return;
+                  
+                  try {
+                    setIsStaking(true);
+                    setStakingError(null);
+                    
+                    const amount = parseFloat(stakeAmount);
+                    
+                    // Create and delegate stake account on Solana
+                    console.log(`[Staking] Creating stake account with ${amount} SOL and delegating to ${selectedValidatorInfo.voteAccount}...`);
+                    
+                    // Show progress
+                    setStakingError(null);
+                    
+                    const { stakeAccount, createSignature, delegateSignature } = await createAndDelegateStake(
+                      amount,
+                      selectedValidatorInfo.voteAccount
+                    );
+                    
+                    console.log(`[Staking] Stake account created: ${stakeAccount.publicKey.toBase58()}`);
+                    console.log(`[Staking] Create transaction: ${createSignature}`);
+                    console.log(`[Staking] Delegate transaction: ${delegateSignature}`);
+                    
+                    // Verify stake account was created successfully
+                    try {
+                      const stakeBalance = await getStakeBalance(stakeAccount.publicKey.toBase58());
+                      console.log(`[Staking] Verified stake account balance: ${stakeBalance} SOL`);
+                    } catch (error) {
+                      console.warn(`[Staking] Could not verify stake account balance:`, error);
+                    }
+
+                    // Create staking record in database
+                    const validatorId = (selectedValidatorInfo as ValidatorInfo & { id?: string }).id || selectedValidator;
+                    await createStakingRecord({
+                      validatorId: validatorId,
+                      amount: amount,
+                      stakeAccount: stakeAccount.publicKey.toBase58(),
+                    });
+
+                    // Show success message
+                    setStakingSuccess(`Successfully staked ${amount} SOL to ${selectedValidatorInfo.name || selectedValidatorInfo.voteAccount.slice(0, 8)}...`);
+                    setStakingError(null);
+                    
+                    // Reset form after delay
+                    setTimeout(() => {
+                      setStakeAmount("");
+                      setIsStakeModalOpen(false);
+                      setStakingSuccess(null);
+                    }, 3000);
+                  } catch (error) {
+                    console.error("Staking error:", error);
+                    const errorMessage = error instanceof Error ? error.message : "Failed to stake";
+                    setStakingError(errorMessage);
+                    setStakingSuccess(null);
+                  } finally {
+                    setIsStaking(false);
+                  }
+                }}
+                disabled={!canStake || isStaking || isCreatingStake || !isStakingReady}
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isStaking || isCreatingStake ? "Staking..." : "Stake"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Staking Stats */}
+        {!isStakeModalOpen && (
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6">
+              <p className="text-xs text-white/60 mb-2">APY preview</p>
+              <h3 className="text-2xl sm:text-3xl font-semibold text-white mb-1">
             {poolConfig.apy}
           </h3>
-          <p className="text-xs text-slate-400">{poolConfig.epoch}</p>
-          <p className="mt-3 text-xs text-slate-300">
+              <p className="text-xs text-white/60">{poolConfig.epoch}</p>
+              <p className="mt-3 text-xs sm:text-sm text-white/70">
             {poolConfig.description}
           </p>
 
-          <div className="mt-4 rounded-xl bg-rose-500/10 p-3 text-xs">
-            <p className="text-rose-200">TVL {poolConfig.tvl}</p>
-            <p className="text-slate-200">
-              Rewards accrue daily and can be claimed every epoch with a single
-              transaction.
+              <div className="mt-4 rounded-xl bg-red-500/10 border border-red-500/30 p-3">
+                <p className="text-sm text-red-400 mb-1">TVL {poolConfig.tvl}</p>
+                <p className="text-xs text-white/70">
+                  Rewards accrue daily and can be claimed every epoch with a single transaction.
             </p>
           </div>
 
-          <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/60 p-3 sm:p-4">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-sky-300 sm:text-xs">
-              Reward simulator
-            </p>
-            <div className="mt-3 grid gap-2 md:grid-cols-2">
-              {[100, 500, 1000, 5000].map((amount) => (
+              <div className="mt-4 rounded-xl border border-white/10 bg-[#0a0a0f] p-3 sm:p-4">
+                <p className="text-xs text-white/60 mb-3">Reward simulator</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[100, 500, 1000, 5000].map((amount) => (
                 <button
                   key={amount}
                   onClick={() => estimateRewards(activePool, amount)}
-                  className="cursor-pointer rounded-xl border border-white/10 px-3 py-2 text-left text-xs font-semibold text-white transition hover:border-rose-400/50"
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs font-semibold text-white transition hover:bg-white/10"
                 >
                   {amount.toLocaleString()} {activePool}
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-xs text-slate-300">
+                <p className="mt-3 text-xs text-white/70">
               Estimated epoch rewards:{" "}
               <span className="text-white">{estimatedRewards}</span>
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 sm:gap-5">
-          <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-4 sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-sky-200 sm:text-xs">
-              APY History
-            </p>
-            <div className="mt-3 h-40 sm:mt-4 sm:h-48">
+            <div className="rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6">
+              <p className="text-xs text-white/60 mb-4">APY History</p>
+              <div className="h-40 sm:h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={fallbackApy}>
-                  <defs>
-                    <linearGradient id="apy" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#38bdf8" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
                   <Tooltip
-                    contentStyle={{ background: "#0f172a", border: "1px solid #334155" }}
+                      contentStyle={{ background: "#111118", border: "1px solid rgba(255,255,255,0.1)" }}
                     labelStyle={{ color: "#e2e8f0" }}
                   />
                   <Area
                     type="monotone"
                     dataKey="apy"
-                    stroke="#38bdf8"
-                    fill="url(#apy)"
-                    strokeWidth={3}
+                      stroke="#3b82f6"
+                    fill="#3b82f6"
+                    fillOpacity={0.2}
+                    strokeWidth={2}
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-4 sm:p-5">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-sky-200 sm:text-xs">
-              Allocation Mix
-            </p>
-            <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center">
-              <div className="h-40 w-full lg:w-1/2">
+            <div className="rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6">
+              <p className="text-xs text-white/60 mb-4">Allocation Mix</p>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                <div className="h-32 sm:h-40 w-full lg:w-1/2">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Tooltip
-                      contentStyle={{ background: "#0f172a", border: "1px solid #334155" }}
+                        contentStyle={{ background: "#111118", border: "1px solid rgba(255,255,255,0.1)" }}
                       labelStyle={{ color: "#e2e8f0" }}
                     />
                     <Pie
                       data={
                         allocation.length
-                          ? allocation.map((slice, index) => ({
+                          ? allocation.map((slice: { label: string; percent: number }, index: number) => ({
                               label: slice.label,
                               value: slice.percent,
                               fill: fallbackAllocation[index % fallbackAllocation.length].fill,
@@ -165,7 +510,7 @@ export default function StakingPage() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex-1 space-y-2 text-xs text-slate-300">
+                <div className="flex-1 space-y-2 text-sm text-white/70">
                 {(allocation.length
                   ? allocation
                   : fallbackAllocation.map(({ label, value }) => ({
@@ -182,8 +527,18 @@ export default function StakingPage() {
             </div>
           </div>
         </div>
-      </section>
-    </>
+        )}
+      </div>
+
+      {/* Receive Modal */}
+      {isConnected && walletAddress && (
+        <ReceiveModal
+          isOpen={receiveModalOpen}
+          onClose={() => setReceiveModalOpen(false)}
+          walletAddress={walletAddress}
+          tokenSymbol="SOL"
+        />
+      )}
+    </div>
   );
 }
-

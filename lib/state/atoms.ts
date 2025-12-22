@@ -54,13 +54,46 @@ export const isLoadingAtom = atom<boolean>(false);
 export const errorMessageAtom = atom<string | null>(null);
 
 /**
+ * Get initial network from environment variable or default to devnet
+ */
+function getInitialNetwork(): "mainnet-beta" | "devnet" | "testnet" {
+  if (typeof window === "undefined") {
+    // Server-side: use env variable
+    const mode = process.env.NEXT_PUBLIC_MODE?.toLowerCase();
+    if (mode === "mainnet" || mode === "mainnet-beta") {
+      return "mainnet-beta";
+    }
+    if (mode === "testnet") {
+      return "testnet";
+    }
+    return "devnet"; // Default
+  }
+  
+  // Client-side: check localStorage first, then env variable
+  const stored = localStorage.getItem("drmr-network");
+  if (stored === "mainnet-beta" || stored === "devnet" || stored === "testnet") {
+    return stored;
+  }
+  
+  // If not in localStorage, use env variable
+  const mode = process.env.NEXT_PUBLIC_MODE?.toLowerCase();
+  if (mode === "mainnet" || mode === "mainnet-beta") {
+    return "mainnet-beta";
+  }
+  if (mode === "testnet") {
+    return "testnet";
+  }
+  return "devnet"; // Default
+}
+
+/**
  * Settings Atoms (with persistence)
  */
 export const autoRefreshAtom = atomWithStorage<boolean>("drmr-auto-refresh", true);
 export const refreshIntervalAtom = atomWithStorage<number>("drmr-refresh-interval", 30000);
 export const networkAtom = atomWithStorage<"mainnet-beta" | "devnet" | "testnet">(
   "drmr-network",
-  "devnet"
+  getInitialNetwork()
 );
 
 /**

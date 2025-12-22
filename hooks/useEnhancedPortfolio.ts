@@ -49,7 +49,8 @@ export function useEnhancedPortfolio() {
           return await portfolioService.fetchPortfolio(
             walletAddress,
             connection,
-            solPrice
+            solPrice,
+            network
           );
         },
         {

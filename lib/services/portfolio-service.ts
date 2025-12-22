@@ -37,9 +37,18 @@ export class PortfolioService {
   async fetchPortfolio(
     walletAddress?: string | null,
     connection?: Connection,
-    solPrice?: number
+    solPrice?: number,
+    network: "mainnet-beta" | "devnet" | "testnet" = "devnet"
   ): Promise<PortfolioSnapshot> {
+    console.log("[PortfolioService] fetchPortfolio called with:", {
+      walletAddress,
+      hasConnection: !!connection,
+      solPrice,
+      network,
+    });
+
     if (!walletAddress || !connection) {
+      console.warn("[PortfolioService] Missing walletAddress or connection, returning empty portfolio");
       return {
         tokens: [],
         nfts: [],
@@ -49,15 +58,24 @@ export class PortfolioService {
 
     try {
       const publicKey = new PublicKey(walletAddress);
+      console.log("[PortfolioService] PublicKey created:", publicKey.toBase58());
 
       // Fetch SOL balance
+      console.log("[PortfolioService] Fetching SOL balance...");
       const solBalanceLamports = await connection.getBalance(publicKey);
       const solBalance = solBalanceLamports / LAMPORTS_PER_SOL;
+      console.log("[PortfolioService] SOL balance retrieved:", {
+        lamports: solBalanceLamports,
+        sol: solBalance,
+        usd: solPrice ? solBalance * solPrice : 0,
+      });
 
       // Fetch SPL token accounts
+      console.log("[PortfolioService] Fetching SPL token accounts...");
       const tokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, {
         programId: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
       });
+      console.log("[PortfolioService] Found", tokenAccounts.value.length, "token accounts");
 
       const tokens: TokenHolding[] = [];
 
@@ -103,11 +121,14 @@ export class PortfolioService {
       }
 
       // Fetch NFTs using Metaplex
+      console.log("[PortfolioService] Fetching NFTs...");
       const tokenService = new SolanaTokenService(connection);
       let nfts: NftHolding[] = [];
       
       try {
-        const metaplexNFTs = await tokenService.getNFTs(walletAddress);
+        // Use the provided network parameter (defaults to devnet)
+        console.log(`[PortfolioService] Fetching NFTs on network: ${network}`);
+        const metaplexNFTs = await tokenService.getNFTs(walletAddress, network);
         nfts = metaplexNFTs.map((nft) => ({
           name: nft.name,
           mint: nft.mint,
@@ -116,21 +137,48 @@ export class PortfolioService {
           explorerLink: nft.explorerLink,
           collection: nft.collection,
         }));
-      } catch (error) {
-        console.error("Error fetching NFTs:", error);
-        // Continue without NFTs if fetch fails
+        console.log("[PortfolioService] Found", nfts.length, "NFTs");
+      } catch (error: any) {
+        console.error("[PortfolioService] Error fetching NFTs:", error);
+        // Continue without NFTs if fetch fails (including rate limits)
+        if (error?.message?.includes("429") || error?.code === 429) {
+          console.warn("[PortfolioService] Rate limit hit when fetching NFTs. Continuing without NFTs.");
+        }
       }
 
       // Fetch recent transactions
+      console.log("[PortfolioService] Fetching recent transactions...");
       const activity = await this.fetchRecentTransactions(connection, publicKey);
+      console.log("[PortfolioService] Found", activity.length, "activities");
 
-      return {
+      const result = {
         tokens: tokens.sort((a, b) => b.amount - a.amount),
         nfts,
         activity,
       };
-    } catch (error) {
-      console.error("Error fetching portfolio:", error);
+
+      console.log("[PortfolioService] Portfolio fetch complete:", {
+        tokenCount: result.tokens.length,
+        nftCount: result.nfts.length,
+        activityCount: result.activity.length,
+        totalTokens: result.tokens.map(t => ({ symbol: t.symbol, amount: t.amount, usd: t.usd })),
+      });
+
+      return result;
+    } catch (error: any) {
+      console.error("[PortfolioService] Error fetching portfolio:", error);
+      console.error("[PortfolioService] Error details:", {
+        message: error?.message,
+        code: error?.code,
+        name: error?.name,
+      });
+      
+      // Provide helpful error message for 403 errors
+      if (error?.message?.includes("403") || error?.code === 403) {
+        console.error("[PortfolioService] 403 Forbidden Error - The RPC endpoint is blocking requests.");
+        console.error("[PortfolioService] Solution: Set NEXT_PUBLIC_SOLANA_RPC_DEVNET or NEXT_PUBLIC_SOLANA_RPC_MAINNET in your .env file with a custom RPC endpoint");
+      }
+      
       return {
         tokens: [],
         nfts: [],

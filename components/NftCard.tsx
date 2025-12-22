@@ -34,7 +34,7 @@ export function NftCard({ nft }: NftCardProps) {
             }}
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+          <div className="flex h-full items-center justify-center bg-white/5">
             <div className="text-center">
               <svg
                 className="mx-auto h-12 w-12 text-slate-600"
@@ -56,7 +56,7 @@ export function NftCard({ nft }: NftCardProps) {
         
         {/* Collection Badge */}
         {nft.collection && (
-          <div className="absolute top-2 left-2 rounded-full border border-white/20 bg-black/60 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
+          <div className="absolute top-2 left-2 rounded-full border border-white/20 bg-black/80 px-2 py-1 text-[10px] font-semibold text-white">
             {nft.collection}
           </div>
         )}

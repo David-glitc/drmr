@@ -76,18 +76,32 @@ export class SolanaTokenService {
    * Fetch NFTs via API route (server-side)
    * This avoids bundling Metaplex and Node.js dependencies in the client
    */
-  async getNFTs(address: string): Promise<NFT[]> {
+  async getNFTs(address: string, network: "mainnet-beta" | "devnet" | "testnet" = "devnet"): Promise<NFT[]> {
     try {
-      const response = await fetch(`/api/nfts?address=${encodeURIComponent(address)}`);
+      console.log(`[SolanaTokenService] Fetching NFTs for ${address} on ${network}`);
+      const response = await fetch(`/api/nfts?address=${encodeURIComponent(address)}&network=${network}`);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch NFTs: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 429) {
+          console.warn("[SolanaTokenService] Rate limit hit when fetching NFTs. Returning empty array.");
+          return []; // Return empty array instead of throwing on rate limit
+        }
+        throw new Error(`Failed to fetch NFTs: ${response.statusText} - ${errorData.details || ""}`);
       }
 
       const data = await response.json();
+      console.log(`[SolanaTokenService] Fetched ${data.nfts?.length || 0} NFTs (${data.fetched || 0}/${data.total || 0})`);
+      if (data.rateLimited) {
+        console.warn("[SolanaTokenService] Rate limit encountered during NFT fetch");
+      }
       return data.nfts || [];
     } catch (error) {
-      console.error("Error fetching NFTs:", error);
+      console.error("[SolanaTokenService] Error fetching NFTs:", error);
+      // Don't throw on rate limit errors, just return empty array
+      if (error instanceof Error && error.message.includes("429")) {
+        return [];
+      }
       throw error;
     }
   }

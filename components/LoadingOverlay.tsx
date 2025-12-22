@@ -9,8 +9,8 @@ export function LoadingOverlay({ message = "Loading...", show = true }: LoadingO
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="rounded-2xl border border-white/10 bg-slate-900/95 p-8 shadow-2xl">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60">
+      <div className="rounded-2xl border border-white/10 bg-[#111118] p-8">
         <div className="flex flex-col items-center gap-4">
           {/* Spinner */}
           <div className="relative">
