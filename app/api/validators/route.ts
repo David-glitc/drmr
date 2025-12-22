@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Connection, clusterApiUrl } from "@solana/web3.js";
-import { ValidatorService } from "@/lib/services/validator-service";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { ValidatorService, type ValidatorInfo } from "@/lib/services/validator-service";
+import { prisma } from "@/lib/prisma";
 
 /**
  * GET /api/validators
@@ -66,6 +64,7 @@ export async function GET(request: NextRequest) {
       await Promise.all(
         validators.map(async (validator) => {
           try {
+            // @ts-expect-error - Prisma client needs regeneration after schema update
             await prisma.validator.upsert({
               where: { voteAccount: validator.voteAccount },
               update: {
@@ -106,24 +105,30 @@ export async function GET(request: NextRequest) {
     }
 
     // If syncing, get database IDs for validators
-    let validatorsWithIds = validators;
+    type ValidatorWithId = ValidatorInfo & { id?: string };
+    let validatorsWithIds: ValidatorWithId[] = validators;
+    
     if (sync) {
+      // @ts-expect-error - Prisma client needs regeneration after schema update
       const dbValidators = await prisma.validator.findMany({
         where: { network },
         select: { id: true, voteAccount: true },
       });
       
-      const validatorMap = new Map(dbValidators.map(v => [v.voteAccount, v.id]));
-      validatorsWithIds = validators.map(v => ({
-        ...v,
-        id: validatorMap.get(v.voteAccount) || v.voteAccount, // Use vote account as fallback ID
-      }));
+      const validatorMap = new Map(dbValidators.map((v: { voteAccount: string; id: string }) => [v.voteAccount, v.id]));
+      validatorsWithIds = validators.map((v) => {
+        const mappedId = validatorMap.get(v.voteAccount);
+        return {
+          ...v,
+          id: mappedId ? mappedId : v.voteAccount, // Use vote account as fallback ID
+        } as ValidatorWithId;
+      });
     }
-
+    
     return NextResponse.json({
       validators: validatorsWithIds.map((v) => ({
         ...v,
-        id: (v as any).id || v.voteAccount,
+        id: v.id || v.voteAccount,
         activatedStake: v.activatedStake.toString(),
         epochCredits: v.epochCredits.toString(),
         lastVote: v.lastVote.toString(),
@@ -173,6 +178,7 @@ export async function POST(request: NextRequest) {
     // Sync to database
     const results = await Promise.allSettled(
       validators.map(async (validator) => {
+        // @ts-expect-error - Prisma client needs regeneration after schema update
         return await prisma.validator.upsert({
           where: { voteAccount: validator.voteAccount },
           update: {
