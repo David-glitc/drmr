@@ -20,7 +20,7 @@ import {
   walletErrorAtom,
   connectionStatusAtom,
   isConnectedAtom,
-} from "../lib/state";
+} from "../lib/state/index";
 import { connectionManager } from "../lib/connection-manager";
 import { onChainCache } from "../lib/onchain/cache";
 
