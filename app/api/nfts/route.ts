@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
-import { Metaplex } from "@metaplex-foundation/js";
-import { connectionManager } from "@/lib/connection-manager";
+import { Connection, PublicKey, clusterApiUrl, Cluster } from "@solana/web3.js";
+import { Metaplex, Metadata, Nft, Sft } from "@metaplex-foundation/js";
 
 /**
  * Server-side API route for fetching NFTs
@@ -40,9 +39,9 @@ export async function GET(request: NextRequest) {
     
     const connection = customRpc 
       ? new Connection(customRpc)
-      : new Connection(clusterApiUrl(network as any));
+      : new Connection(clusterApiUrl(network as Cluster));
     
-    console.log(`[NFT API] Using RPC endpoint for ${network}:`, customRpc || clusterApiUrl(network as any));
+    console.log(`[NFT API] Using RPC endpoint for ${network}:`, customRpc || clusterApiUrl(network as Cluster));
     
     const publicKey = new PublicKey(address);
     
@@ -69,50 +68,111 @@ export async function GET(request: NextRequest) {
             await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay every 10 NFTs
           }
           
-          const loadedNft = await metaplex.nfts().load({ metadata: nft });
-          const json = loadedNft.json;
+          // Get mint address - handle different types (Metadata, Nft, Sft)
+          let mintAddress: PublicKey;
+          
+          if ("mintAddress" in nft) {
+            // It's a Metadata object
+            mintAddress = nft.mintAddress;
+          } else if ("mint" in nft) {
+            // It's an Nft or Sft
+            mintAddress = nft.mint.address;
+          } else {
+            throw new Error("Could not determine mint address from NFT object");
+          }
+          
+          const mintAddressString = mintAddress.toBase58();
+          
+          // Load NFT if it's Metadata, otherwise use the NFT/SFT directly
+          let loadedNft: Nft | Sft;
+          let json: Record<string, unknown> | null = null;
+          
+          if ("mintAddress" in nft && "uri" in nft) {
+            // It's a Metadata object, need to load it
+            loadedNft = await metaplex.nfts().load({ metadata: nft as Metadata });
+            json = loadedNft.json;
+          } else {
+            // It's already an Nft or Sft, use it directly
+            loadedNft = nft as Nft | Sft;
+            json = loadedNft.json;
+          }
+          
           const clusterParam = network === "mainnet-beta" ? "mainnet" : network;
-          const explorerLink = `https://solscan.io/token/${nft.mintAddress.toBase58()}?cluster=${clusterParam}`;
+          const explorerLink = `https://solscan.io/token/${mintAddressString}?cluster=${clusterParam}`;
 
           return {
-            mint: nft.mintAddress.toBase58(),
+            mint: mintAddressString,
             name: loadedNft.name || "Unnamed NFT",
-            description: json?.description || "",
-            image: json?.image || "",
+            description: (json?.description as string) || "",
+            image: (json?.image as string) || "",
             explorerLink,
-            collection: loadedNft.collection?.name,
+            collection: typeof loadedNft.collection === "object" && loadedNft.collection && "name" in loadedNft.collection
+              ? (loadedNft.collection.name as string)
+              : undefined,
             attributes: json?.attributes,
           };
-        } catch (error: any) {
-          console.error(`[NFT API] Error loading NFT ${nft.mintAddress.toBase58()}:`, error?.message || error);
+        } catch (error: unknown) {
+          // Get mint address for error handling
+          let mintAddressString = "unknown";
+          try {
+            let mintAddress: PublicKey | undefined;
+            if ("mintAddress" in nft) {
+              mintAddress = nft.mintAddress;
+            } else if ("mint" in nft) {
+              mintAddress = nft.mint.address;
+            }
+            mintAddressString = mintAddress?.toBase58() || "unknown";
+          } catch {
+            // Ignore errors when trying to get mint address
+          }
+          
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const errorCode = (error as { code?: number })?.code;
+          
+          console.error(`[NFT API] Error loading NFT ${mintAddressString}:`, errorMessage);
           
           // Handle rate limiting errors
-          if (error?.message?.includes("429") || error?.code === 429) {
+          if (errorMessage.includes("429") || errorCode === 429) {
             console.error(`[NFT API] Rate limit hit at NFT ${index + 1}/${nftsToProcess.length}. Stopping fetch.`);
             throw error; // Re-throw to stop processing
           }
           
           return {
-            mint: nft.mintAddress.toBase58(),
+            mint: mintAddressString,
             name: "Unknown NFT",
             description: "",
             image: "",
-            explorerLink: `https://solscan.io/token/${nft.mintAddress.toBase58()}?cluster=${network === "mainnet-beta" ? "mainnet" : network}`,
+            explorerLink: `https://solscan.io/token/${mintAddressString}?cluster=${network === "mainnet-beta" ? "mainnet" : network}`,
           };
         }
       })
     );
     
     // Filter out failed promises and extract values
+    interface NftResult {
+      mint: string;
+      name: string;
+      description: string;
+      image: string;
+      explorerLink: string;
+      collection?: string;
+      attributes?: unknown;
+    }
+    
     const successfulNFTs = nftDetails
-      .filter((result): result is PromiseFulfilledResult<any> => result.status === "fulfilled")
+      .filter((result): result is PromiseFulfilledResult<NftResult> => result.status === "fulfilled")
       .map(result => result.value);
     
     // Check if we hit rate limits
-    const rateLimited = nftDetails.some(result => 
-      result.status === "rejected" && 
-      (result.reason?.message?.includes("429") || result.reason?.code === 429)
-    );
+    const rateLimited = nftDetails.some(result => {
+      if (result.status === "rejected") {
+        const reason = result.reason;
+        const errorMessage = reason instanceof Error ? reason.message : String(reason);
+        const errorCode = (reason as { code?: number })?.code;
+        return errorMessage.includes("429") || errorCode === 429;
+      }
+      return false;
+    });
     
     if (rateLimited) {
       console.warn(`[NFT API] Rate limit encountered. Returning ${successfulNFTs.length} NFTs out of ${nfts.length}`);
@@ -127,11 +187,14 @@ export async function GET(request: NextRequest) {
       fetched: successfulNFTs.length,
       rateLimited 
     });
-  } catch (error: any) {
-    console.error("[NFT API] Error fetching NFTs:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode = (error as { code?: number })?.code;
+    
+    console.error("[NFT API] Error fetching NFTs:", errorMessage);
     
     // Handle rate limiting errors specifically
-    if (error?.message?.includes("429") || error?.code === 429) {
+    if (errorMessage.includes("429") || errorCode === 429) {
       return NextResponse.json(
         { 
           error: "Rate limit exceeded", 
@@ -143,7 +206,7 @@ export async function GET(request: NextRequest) {
     }
     
     return NextResponse.json(
-      { error: "Failed to fetch NFTs", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Failed to fetch NFTs", details: errorMessage },
       { status: 500 }
     );
   }
