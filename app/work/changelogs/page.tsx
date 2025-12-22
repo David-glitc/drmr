@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface ChangelogEntry {
   version: string;
@@ -30,7 +31,7 @@ const changelogData: ChangelogEntry[] = [
       "Network configuration (Devnet/Mainnet toggle)",
       "Database integration for validators and staking records"
     ],
-    image: "/screenshots/portfolio-page.png",
+    image: "screenshots/portfolio-page.png",
     imageAlt: "Portfolio page showing balance card, tokens list, and collectibles section"
   },
   {
@@ -46,7 +47,7 @@ const changelogData: ChangelogEntry[] = [
       "Stake account creation and delegation",
       "Database synchronization for staking records"
     ],
-    image: "/screenshots/staking-page.png",
+    image: "screenshots/staking-page.png",
     imageAlt: "Staking page with modal showing amount slider and validator selection"
   },
   {
@@ -87,7 +88,7 @@ const changelogData: ChangelogEntry[] = [
       "USD conversion display",
       "Token selector for SOL/SPL tokens"
     ],
-    image: "/screenshots/receive-modal.png",
+    image: "screenshots/receive-modal.png",
     imageAlt: "Receive modal with QR code and wallet address. Send modal also available."
   },
   {
@@ -270,14 +271,18 @@ export default function ChangelogsPage() {
 
             {/* Image */}
             {entry.image && (
-              <div className="mt-4 rounded-xl border border-white/10 overflow-hidden bg-white/5">
-                <img
-                  src={entry.image}
+              <div className="mt-4 rounded-xl border border-white/10 overflow-hidden bg-white/5 relative w-full" style={{ minHeight: '200px' }}>
+                <Image
+                  src={`/${entry.image}`}
                   alt={entry.imageAlt || entry.title}
+                  width={1200}
+                  height={600}
                   className="w-full h-auto object-cover max-h-[600px]"
+                  unoptimized
                   onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                    const parent = e.currentTarget.parentElement;
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                    const parent = target.parentElement;
                     if (parent) {
                       parent.innerHTML = '<div class="p-8 text-center text-white/60 text-sm">Image not available</div>';
                     }
