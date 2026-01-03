@@ -1,6 +1,0 @@
-target/
-**/*.rs.bk
-.anchor/
-.DS_Store
-test-ledger/
-node_modules/
