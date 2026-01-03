@@ -52,15 +52,20 @@ export function useStakingRecords() {
       validatorId: string;
       amount: number;
       stakeAccount?: string;
+      walletAddress?: string; // Allow wallet address to be passed in
     }) => {
-      if (!walletAddress) throw new Error("Wallet not connected");
+      // Use passed walletAddress or fall back to atom value
+      const addressToUse = data.walletAddress || walletAddress;
+      if (!addressToUse) throw new Error("Wallet not connected");
 
       const response = await fetch("/api/staking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          walletAddress,
-          ...data,
+          walletAddress: addressToUse,
+          validatorId: data.validatorId,
+          amount: data.amount,
+          stakeAccount: data.stakeAccount,
         }),
       });
 
@@ -71,9 +76,12 @@ export function useStakingRecords() {
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       // Invalidate and refetch staking records
-      queryClient.invalidateQueries({ queryKey: ["staking-records", walletAddress] });
+      const addressToUse = variables.walletAddress || walletAddress;
+      if (addressToUse) {
+        queryClient.invalidateQueries({ queryKey: ["staking-records", addressToUse] });
+      }
     },
   });
 

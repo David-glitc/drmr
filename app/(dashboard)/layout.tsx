@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 
-import { navItems, settingsNav } from "../../lib/nav";
+import { navItems, settingsNav, adminNavItem } from "../../lib/nav";
 import { useWallet } from "../../hooks/useWallet";
 import { useSolanaAccount } from "../../hooks/useSolanaAccount";
 import { useSolPrice } from "../../hooks/useSolPrice";
@@ -15,6 +15,7 @@ import { DashboardLoader } from "../../components/DashboardLoader";
 import { NetworkToggle } from "../../components/NetworkToggle";
 import { ReceiveModal } from "../../components/ReceiveModal";
 import { WalletBalanceSkeleton } from "../../components/Skeletons";
+import { AdminPasswordModal } from "../../components/AdminPasswordModal";
 
 const iconMap: Record<string, React.ReactElement> = {
   chart: (
@@ -68,6 +69,61 @@ export default function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
+  const [adminPasswordModalOpen, setAdminPasswordModalOpen] = useState(false);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+
+  // Check admin authentication on mount and when storage changes
+  useEffect(() => {
+    const checkAdminAuth = () => {
+      const authStatus = localStorage.getItem("admin_authenticated");
+      const authTimestamp = localStorage.getItem("admin_auth_timestamp");
+      
+      // Check if auth is valid (expires after 24 hours)
+      if (authStatus === "true" && authTimestamp) {
+        const timestamp = parseInt(authTimestamp, 10);
+        const now = Date.now();
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+        
+        if (now - timestamp < twentyFourHours) {
+          setIsAdminAuthenticated(true);
+        } else {
+          // Auth expired
+          localStorage.removeItem("admin_authenticated");
+          localStorage.removeItem("admin_auth_timestamp");
+          setIsAdminAuthenticated(false);
+        }
+      } else {
+        setIsAdminAuthenticated(false);
+      }
+    };
+
+    checkAdminAuth();
+
+    // Listen for storage changes (for multi-tab support)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "admin_authenticated" || e.key === "admin_auth_timestamp") {
+        checkAdminAuth();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  // Keyboard shortcut handler (Ctrl+Shift+D)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === "D") {
+        e.preventDefault();
+        if (!isAdminAuthenticated) {
+          setAdminPasswordModalOpen(true);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isAdminAuthenticated]);
 
   return (
     <div className="relative min-h-screen bg-[#0a0a0f] text-white">
@@ -126,6 +182,25 @@ export default function DashboardLayout({
                   </Link>
               );
             })}
+            
+            {/* Admin Link - Only shown when authenticated */}
+            {isAdminAuthenticated && (
+              <Link
+                key={adminNavItem.key}
+                href={adminNavItem.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
+                  pathname === adminNavItem.href
+                    ? "bg-white/10 text-white"
+                    : "text-white/70 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <span className={pathname === adminNavItem.href ? "text-blue-500" : "text-white/50"}>
+                  {iconMap[adminNavItem.icon]}
+                </span>
+                {adminNavItem.label}
+              </Link>
+            )}
           </nav>
 
           {/* Settings Link */}
@@ -316,6 +391,13 @@ export default function DashboardLayout({
             tokenSymbol="SOL"
           />
         )}
+
+        {/* Admin Password Modal */}
+        <AdminPasswordModal
+          isOpen={adminPasswordModalOpen}
+          onClose={() => setAdminPasswordModalOpen(false)}
+          onSuccess={() => setIsAdminAuthenticated(true)}
+        />
       </div>
     </div>
   );

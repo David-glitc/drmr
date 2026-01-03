@@ -61,8 +61,8 @@ export default function TokensPage() {
         <div className="mb-4">
           <p className="text-xs text-white/60 mb-1">Supply chart</p>
           <h3 className="text-base sm:text-lg font-semibold text-white">
-            Bar distribution via Recharts
-          </h3>
+              Bar distribution via Recharts
+            </h3>
         </div>
         <div className="h-48 sm:h-60">
           <ResponsiveContainer width="100%" height="100%">

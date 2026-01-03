@@ -32,6 +32,11 @@ NEXT_PUBLIC_SOLANA_RPC_DEVNET=https://solana-devnet.g.alchemy.com/v2/YOUR_API_KE
 # Example with API key (QuickNode format):
 # NEXT_PUBLIC_SOLANA_RPC_MAINNET=https://YOUR_ENDPOINT.solana-mainnet.quiknode.pro/YOUR_API_KEY/
 # NEXT_PUBLIC_SOLANA_RPC_DEVNET=https://YOUR_ENDPOINT.solana-devnet.quiknode.pro/YOUR_API_KEY/
+
+# Admin Password (Server-side only)
+# Set this to enable admin access via Ctrl+Shift+D shortcut
+# This password is verified server-side and never exposed to the client
+ADMIN_PASSWORD=your-secure-admin-password-here
 ```
 
 **Important:** 

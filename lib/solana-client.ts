@@ -17,19 +17,19 @@ export function getSolanaConnection() {
  */
 export function getSolanaEndpoint(network: "mainnet-beta" | "devnet" | "testnet" = "devnet") {
   if (network === "mainnet-beta") {
-    return (
+  return (
       process.env.NEXT_PUBLIC_SOLANA_RPC_MAINNET ??
       process.env.NEXT_PUBLIC_SOLANA_RPC ??
-      process.env.SOLANA_RPC ??
+    process.env.SOLANA_RPC ??
       clusterApiUrl("mainnet-beta")
     );
   } else if (network === "devnet") {
     return (
       process.env.NEXT_PUBLIC_SOLANA_RPC_DEVNET ??
-      process.env.NEXT_PUBLIC_SOLANA_RPC ??
+    process.env.NEXT_PUBLIC_SOLANA_RPC ??
       process.env.SOLANA_RPC ??
-      clusterApiUrl("devnet")
-    );
+    clusterApiUrl("devnet")
+  );
   } else {
     return (
       process.env.NEXT_PUBLIC_SOLANA_RPC ??

@@ -58,13 +58,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Sync with database if requested
+    let dbSyncSuccess = false;
     if (sync) {
+      try {
       console.log(`[Validators API] Syncing ${validators.length} validators to database...`);
       
-      await Promise.all(
+        const syncResults = await Promise.allSettled(
         validators.map(async (validator) => {
           try {
-            // @ts-expect-error - Prisma client needs regeneration after schema update
             await prisma.validator.upsert({
               where: { voteAccount: validator.voteAccount },
               update: {
@@ -97,32 +98,68 @@ export async function GET(request: NextRequest) {
             });
           } catch (error) {
             console.error(`[Validators API] Error syncing validator ${validator.voteAccount}:`, error);
+              throw error;
           }
         })
       );
 
-      console.log(`[Validators API] Successfully synced validators to database`);
+        const successful = syncResults.filter((r) => r.status === "fulfilled").length;
+        const failed = syncResults.filter((r) => r.status === "rejected").length;
+        
+        if (successful > 0) {
+          console.log(`[Validators API] Successfully synced ${successful} validators to database${failed > 0 ? ` (${failed} failed)` : ""}`);
+          dbSyncSuccess = true;
+        } else {
+          console.warn(`[Validators API] Database sync failed for all validators. Continuing without database sync.`);
+        }
+      } catch (error) {
+        // Database connection error - log but don't fail the entire request
+        console.error(`[Validators API] Database connection error during sync:`, error);
+        console.warn(`[Validators API] Continuing without database sync. Validators will still be returned from Solana.`);
+        dbSyncSuccess = false;
+      }
     }
 
-    // If syncing, get database IDs for validators
-    type ValidatorWithId = ValidatorInfo & { id?: string };
-    let validatorsWithIds: ValidatorWithId[] = validators;
+    // Filter to only active validators (non-delinquent)
+    // For devnet, we only want active validators
+    const activeValidators = validators.filter((v) => !v.delinquent);
     
-    if (sync) {
-      // @ts-expect-error - Prisma client needs regeneration after schema update
+    // If syncing and database is available, get database IDs for validators
+    type ValidatorWithId = ValidatorInfo & { id?: string };
+    let validatorsWithIds: ValidatorWithId[] = activeValidators;
+    
+    if (sync && dbSyncSuccess) {
+      try {
       const dbValidators = await prisma.validator.findMany({
-        where: { network },
+          where: { 
+            network,
+            isActive: true, // Only get active validators
+          },
         select: { id: true, voteAccount: true },
       });
       
       const validatorMap = new Map(dbValidators.map((v: { voteAccount: string; id: string }) => [v.voteAccount, v.id]));
-      validatorsWithIds = validators.map((v) => {
+        validatorsWithIds = activeValidators.map((v) => {
         const mappedId = validatorMap.get(v.voteAccount);
         return {
           ...v,
           id: mappedId ? mappedId : v.voteAccount, // Use vote account as fallback ID
         } as ValidatorWithId;
       });
+      } catch (error) {
+        // Database query failed - use vote account as ID fallback
+        console.warn(`[Validators API] Could not fetch database IDs. Using vote accounts as IDs.`, error instanceof Error ? error.message : String(error));
+        validatorsWithIds = activeValidators.map((v) => ({
+          ...v,
+          id: v.voteAccount,
+        } as ValidatorWithId));
+      }
+    } else {
+      // No sync or sync failed - use vote account as ID
+      validatorsWithIds = activeValidators.map((v) => ({
+        ...v,
+        id: v.voteAccount,
+      } as ValidatorWithId));
     }
     
     return NextResponse.json({
@@ -134,9 +171,10 @@ export async function GET(request: NextRequest) {
         lastVote: v.lastVote.toString(),
         rootSlot: v.rootSlot.toString(),
       })),
-      count: validators.length,
+      count: activeValidators.length,
       network,
-      synced: sync,
+      synced: sync && dbSyncSuccess,
+      dbAvailable: dbSyncSuccess,
     });
   } catch (error) {
     console.error("[Validators API] Error:", error);
@@ -178,7 +216,6 @@ export async function POST(request: NextRequest) {
     // Sync to database
     const results = await Promise.allSettled(
       validators.map(async (validator) => {
-        // @ts-expect-error - Prisma client needs regeneration after schema update
         return await prisma.validator.upsert({
           where: { voteAccount: validator.voteAccount },
           update: {

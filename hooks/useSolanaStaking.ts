@@ -17,10 +17,15 @@ export function useSolanaStaking() {
   const { connection } = useConnection();
 
   const stakingService = useMemo(() => {
-    if (!publicKey || !signTransaction || !sendTransaction) {
+    if (!publicKey || !sendTransaction) {
       return null;
     }
-    return new SolanaStakingService(connection, publicKey, signTransaction, sendTransaction);
+    // Use new wallet interface approach
+    return new SolanaStakingService(connection, {
+      publicKey,
+      signTransaction,
+      sendTransaction,
+    });
   }, [publicKey, signTransaction, sendTransaction, connection]);
 
   const createStakeAccount = useCallback(
@@ -98,12 +103,32 @@ export function useSolanaStaking() {
     [stakingService]
   );
 
+  const getTopActiveValidators = useCallback(
+    async (limit: number = 10) => {
+      if (!stakingService) {
+        throw new Error("Wallet not connected");
+      }
+      return await stakingService.getTopActiveValidators(limit);
+    },
+    [stakingService]
+  );
+
   const getValidatorInfos = useCallback(
     async () => {
       if (!stakingService) {
         throw new Error("Wallet not connected");
       }
       return await stakingService.getValidatorInfos();
+    },
+    [stakingService]
+  );
+
+  const stakeSol = useCallback(
+    async (amountSOL: number, validatorVoteAddress: string) => {
+      if (!stakingService) {
+        throw new Error("Wallet not connected");
+      }
+      return await stakingService.stakeSol(amountSOL, validatorVoteAddress);
     },
     [stakingService]
   );
@@ -133,6 +158,8 @@ export function useSolanaStaking() {
     createStakeAccount,
     delegateStake,
     createAndDelegateStake,
+    stakeSol, // New method: combined create + delegate in single transaction
+    getTopActiveValidators, // New method: get top validators by stake
     deactivateStake,
     withdrawStake,
     getStakeBalance,

@@ -20,21 +20,21 @@ export function NetworkToggle() {
 
   return (
     <div className="flex items-center gap-2">
-      <button
+    <button
         onClick={() => !isDisabled && setNetwork("devnet")}
-        disabled={isDisabled}
-        className={`
-          relative inline-flex h-8 items-center rounded-full border px-3 transition-colors
-          ${isDisabled 
+      disabled={isDisabled}
+      className={`
+        relative inline-flex h-8 items-center rounded-full border px-3 transition-colors
+        ${isDisabled 
             ? "border-white/10 bg-[#111118] cursor-not-allowed opacity-50" 
             : network === "devnet"
             ? "border-blue-500/50 bg-blue-500/20"
             : "border-white/10 bg-[#111118] hover:bg-white/5"
-          }
-        `}
+        }
+      `}
         title={isDisabled ? "Connect wallet to change network" : "Devnet (Default)"}
-      >
-        <span className="text-xs font-semibold text-white">
+    >
+      <span className="text-xs font-semibold text-white">
           Devnet
         </span>
       </button>
@@ -60,8 +60,8 @@ export function NetworkToggle() {
               Soon
             </span>
           )}
-        </span>
-      </button>
+      </span>
+    </button>
     </div>
   );
 }

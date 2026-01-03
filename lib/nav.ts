@@ -1,10 +1,16 @@
 export const navItems = [
   { key: "portfolio", label: "Portfolio", href: "/portfolio", icon: "chart" },
   { key: "staking", label: "Staking", href: "/staking", icon: "diamond" },
-  { key: "trade", label: "Trade", href: "/trade", icon: "arrows" },
   { key: "tokens", label: "Tokens", href: "/tokens", icon: "coin" },
-  { key: "admin", label: "Admin", href: "/admin", icon: "gear" },
 ] as const;
+
+// Admin nav item (only shown when authenticated)
+export const adminNavItem = {
+  key: "admin",
+  label: "Admin",
+  href: "/admin",
+  icon: "gear",
+} as const;
 
 export const settingsNav = {
   key: "settings",

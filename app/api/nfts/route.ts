@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Connection, PublicKey, clusterApiUrl, Cluster } from "@solana/web3.js";
-import { Metaplex, Metadata, Nft, Sft } from "@metaplex-foundation/js";
+import { PublicKey, clusterApiUrl, Cluster } from "@solana/web3.js";
+import { publicKey } from "@metaplex-foundation/umi";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { dasApi } from "@metaplex-foundation/digital-asset-standard-api";
 
 /**
- * Server-side API route for fetching NFTs
- * This keeps Metaplex (and its Node.js dependencies) on the server only
+ * Server-side API route for fetching NFTs using DAS API
+ * This uses the Metaplex Digital Asset Standard API for better performance
  */
 export async function GET(request: NextRequest) {
   try {
@@ -26,123 +28,110 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get connection based on network - use network-specific RPC endpoints
-    let customRpc: string | undefined;
+    // Get RPC endpoint based on network - use network-specific RPC endpoints
+    // Note: DAS API requires a DAS-enabled RPC endpoint (e.g., Helius, QuickNode, etc.)
+    // Public Solana RPC endpoints may not support DAS API
+    let rpcUrl: string;
     
     if (network === "mainnet-beta") {
-      customRpc = process.env.NEXT_PUBLIC_SOLANA_RPC_MAINNET || process.env.NEXT_PUBLIC_SOLANA_RPC;
+      rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_MAINNET || process.env.NEXT_PUBLIC_SOLANA_RPC || clusterApiUrl("mainnet-beta");
     } else if (network === "devnet") {
-      customRpc = process.env.NEXT_PUBLIC_SOLANA_RPC_DEVNET || process.env.NEXT_PUBLIC_SOLANA_RPC;
+      rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_DEVNET || process.env.NEXT_PUBLIC_SOLANA_RPC || clusterApiUrl("devnet");
     } else {
-      customRpc = process.env.NEXT_PUBLIC_SOLANA_RPC;
+      rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC || clusterApiUrl(network as Cluster);
     }
     
-    const connection = customRpc 
-      ? new Connection(customRpc)
-      : new Connection(clusterApiUrl(network as Cluster));
+    console.log(`[NFT API] Using RPC endpoint for ${network}:`, rpcUrl);
     
-    console.log(`[NFT API] Using RPC endpoint for ${network}:`, customRpc || clusterApiUrl(network as Cluster));
-    
-    const publicKey = new PublicKey(address);
+    // Validate address
+    try {
+      new PublicKey(address);
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid wallet address" },
+        { status: 400 }
+      );
+    }
     
     console.log(`[NFT API] Fetching NFTs for ${address} on ${network}`);
     
-    // Initialize Metaplex on server side (no browser issues)
-    const metaplex = Metaplex.make(connection, {
-      cluster: network as "mainnet-beta" | "devnet" | "testnet",
+    // Initialize Umi with DAS API
+    const umi = createUmi(rpcUrl).use(dasApi());
+    const ownerPublicKey = publicKey(address);
+
+    // Get all assets owned by the address using DAS API
+    // Filter for NFTs (interface: 'V1_NFT' or 'V1_PRINT')
+    const assets = await umi.rpc.getAssetsByOwner({
+      owner: ownerPublicKey,
+      page: 1,
+      limit: 1000, // DAS API supports up to 1000 per request
     });
-
-    // Find all NFTs owned by the address
-    const nfts = await metaplex.nfts().findAllByOwner({ owner: publicKey });
     
-    console.log(`[NFT API] Found ${nfts.length} NFTs`);
+    console.log(`[NFT API] Found ${assets.items.length} assets`);
 
-    // Load full metadata for each NFT with rate limiting protection
-    // Limit to 50 NFTs max to avoid rate limits
-    const nftsToProcess = nfts.slice(0, 50);
+    // Filter for NFTs only (exclude fungible tokens)
+    // DAS API returns assets with interface types: 'V1_NFT', 'V1_PRINT', 'ProgrammableNFT', etc.
+    const nftAssets = assets.items.filter((asset) => {
+      const assetInterface = asset.interface;
+      return assetInterface === 'V1_NFT' || assetInterface === 'V1_PRINT' || assetInterface === 'ProgrammableNFT' || assetInterface === 'V1_PRINT_EDITION';
+    });
+    
+    console.log(`[NFT API] Filtered to ${nftAssets.length} NFTs`);
+    
+    // Process NFTs - limit to 100 for performance
+    const nftsToProcess = nftAssets.slice(0, 100);
     const nftDetails = await Promise.allSettled(
-      nftsToProcess.map(async (nft, index) => {
+      nftsToProcess.map(async (asset) => {
         try {
-          // Add delay to avoid rate limiting (429 errors)
-          if (index > 0 && index % 10 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay every 10 NFTs
-          }
+          // Extract data from DAS API asset
+          const assetId = asset.id;
+          const metadata = asset.content?.metadata;
+          const links = asset.content?.links;
           
-          // Get mint address - handle different types (Metadata, Nft, Sft)
-          let mintAddress: PublicKey;
+          // Get name, description, and image
+          const name = metadata?.name || "Unnamed NFT";
+          const description = metadata?.description || "";
+          const image = links?.image || links?.icon || "";
           
-          if ("mintAddress" in nft) {
-            // It's a Metadata object
-            mintAddress = nft.mintAddress;
-          } else if ("mint" in nft) {
-            // It's an Nft or Sft
-            mintAddress = nft.mint.address;
-          } else {
-            throw new Error("Could not determine mint address from NFT object");
-          }
+          // Get collection info
+          const grouping = asset.grouping?.find(g => g.group_key === 'collection');
+          const collection = grouping?.group_value || undefined;
           
-          const mintAddressString = mintAddress.toBase58();
+          // Get attributes from metadata
+          const attributes = metadata?.attributes as Array<{ trait_type: string; value: string }> | undefined;
           
-          // Load NFT if it's Metadata, otherwise use the NFT/SFT directly
-          let loadedNft: Nft | Sft;
-          let json: Record<string, unknown> | null = null;
-          
-          if ("mintAddress" in nft && "uri" in nft) {
-            // It's a Metadata object, need to load it
-            loadedNft = await metaplex.nfts().load({ metadata: nft as Metadata });
-            json = loadedNft.json;
-          } else {
-            // It's already an Nft or Sft, use it directly
-            loadedNft = nft as Nft | Sft;
-            json = loadedNft.json;
-          }
-          
+          // Build explorer link
           const clusterParam = network === "mainnet-beta" ? "mainnet" : network;
-          const explorerLink = `https://solscan.io/token/${mintAddressString}?cluster=${clusterParam}`;
+          const explorerLink = `https://solscan.io/token/${assetId}?cluster=${clusterParam}`;
 
           return {
-            mint: mintAddressString,
-            name: loadedNft.name || "Unnamed NFT",
-            description: (json?.description as string) || "",
-            image: (json?.image as string) || "",
+            mint: assetId,
+            name,
+            description,
+            image,
             explorerLink,
-            collection: typeof loadedNft.collection === "object" && loadedNft.collection && "name" in loadedNft.collection
-              ? (loadedNft.collection.name as string)
-              : undefined,
-            attributes: json?.attributes,
+            collection,
+            attributes,
           };
         } catch (error: unknown) {
-          // Get mint address for error handling
-          let mintAddressString = "unknown";
-          try {
-            let mintAddress: PublicKey | undefined;
-            if ("mintAddress" in nft) {
-              mintAddress = nft.mintAddress;
-            } else if ("mint" in nft) {
-              mintAddress = nft.mint.address;
-            }
-            mintAddressString = mintAddress?.toBase58() || "unknown";
-          } catch {
-            // Ignore errors when trying to get mint address
-          }
-          
           const errorMessage = error instanceof Error ? error.message : String(error);
           const errorCode = (error as { code?: number })?.code;
           
-          console.error(`[NFT API] Error loading NFT ${mintAddressString}:`, errorMessage);
+          console.error(`[NFT API] Error processing NFT ${asset.id}:`, errorMessage);
           
           // Handle rate limiting errors
           if (errorMessage.includes("429") || errorCode === 429) {
-            console.error(`[NFT API] Rate limit hit at NFT ${index + 1}/${nftsToProcess.length}. Stopping fetch.`);
             throw error; // Re-throw to stop processing
           }
           
+          // Return minimal NFT data on error
+          const clusterParam = network === "mainnet-beta" ? "mainnet" : network;
           return {
-            mint: mintAddressString,
+            mint: asset.id,
             name: "Unknown NFT",
             description: "",
             image: "",
-            explorerLink: `https://solscan.io/token/${mintAddressString}?cluster=${network === "mainnet-beta" ? "mainnet" : network}`,
+            explorerLink: `https://solscan.io/token/${asset.id}?cluster=${clusterParam}`,
           };
         }
       })
@@ -156,7 +145,7 @@ export async function GET(request: NextRequest) {
       image: string;
       explorerLink: string;
       collection?: string;
-      attributes?: unknown;
+      attributes?: Array<{ trait_type: string; value: string }>;
     }
     
     const successfulNFTs = nftDetails
@@ -175,7 +164,7 @@ export async function GET(request: NextRequest) {
     });
     
     if (rateLimited) {
-      console.warn(`[NFT API] Rate limit encountered. Returning ${successfulNFTs.length} NFTs out of ${nfts.length}`);
+      console.warn(`[NFT API] Rate limit encountered. Returning ${successfulNFTs.length} NFTs out of ${nftAssets.length}`);
     }
 
     // Filter out NFTs without images
@@ -183,7 +172,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ 
       nfts: validNFTs,
-      total: nfts.length,
+      total: nftAssets.length,
       fetched: successfulNFTs.length,
       rateLimited 
     });

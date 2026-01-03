@@ -9,9 +9,9 @@ import { WalletAdapterProvider } from "./wallet-adapter-provider";
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <JotaiProvider>
-      <WalletAdapterProvider>
-        <QueryProvider>{children}</QueryProvider>
-      </WalletAdapterProvider>
+    <WalletAdapterProvider>
+      <QueryProvider>{children}</QueryProvider>
+    </WalletAdapterProvider>
     </JotaiProvider>
   );
 }
