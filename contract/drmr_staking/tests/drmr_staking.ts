@@ -6,7 +6,7 @@ describe("drmr_staking", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
-  const program = anchor.workspace.DrmrStaking as Program<DrmrStaking>;
+  const program = anchor.workspace.drmrStaking as Program<DrmrStaking>;
 
   it("Is initialized!", async () => {
     // Add your test here.
