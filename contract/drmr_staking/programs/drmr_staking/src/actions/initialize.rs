@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::{Token, TokenAccount};
 use crate::config::StakingPool;
 
 pub fn initialize(
@@ -13,6 +14,7 @@ pub fn initialize(
     
     // Derive the trusted admin PDA address
     // All pools will have this trusted admin as their admin
+    //@NOTE this admin address will be a hardcoded normal solana address
     let (trusted_admin_pda, _bump) = Pubkey::find_program_address(
         &[b"trusted_admin"],
         ctx.program_id,
@@ -22,9 +24,14 @@ pub fn initialize(
     // The creator pays for pool creation but doesn't become admin
     pool.admin = trusted_admin_pda;
 
-    // TODO: Validate mint address instead of using default
-    // Should verify it's a valid SPL token mint account
-    pool.drmr_mint = Pubkey::default();
+    // Validate and set mint address
+    // TODO: Add proper validation to ensure it's a valid SPL token mint account
+    pool.drmr_mint = ctx.accounts.drmr_mint.key();
+    
+    // Stake and reward vaults are automatically created by Anchor's init constraint
+    // with token::mint and token::authority. They are PDA-owned by staking_pool.
+    msg!("Stake vault created: {}", ctx.accounts.stake_vault.key());
+    msg!("Reward vault created: {}", ctx.accounts.reward_vault.key());
     
     // Maximum allowed epoch cycles for staking lock-up periods
     pool.stake_epoch_cycles = max_stake_epoch_cycles;
@@ -58,13 +65,38 @@ pub struct Initialize<'info> {
     )]
     pub staking_pool: Account<'info, StakingPool>,
     
+    /// Stake vault: PDA-owned token account to hold staked tokens
+    #[account(
+        init,
+        payer = creator,
+        token::mint = drmr_mint,
+        token::authority = staking_pool,
+        seeds = [b"stake_vault", staking_pool.key().as_ref()],
+        bump
+    )]
+    pub stake_vault: Account<'info, TokenAccount>,
+    
+    /// Reward vault: PDA-owned token account to hold reward tokens
+    #[account(
+        init,
+        payer = creator,
+        token::mint = drmr_mint,
+        token::authority = staking_pool,
+        seeds = [b"reward_vault", staking_pool.key().as_ref()],
+        bump
+    )]
+    pub reward_vault: Account<'info, TokenAccount>,
+    
     /// Anyone can create a pool - they pay for the account creation
     /// But they don't become the admin (trusted_admin is the admin)
     #[account(mut)]
     pub creator: Signer<'info>,
     
-    /// CHECK: The DRMR mint account
+    /// The DRMR mint account (validated in function)
+    /// CHECK: Should verify it's a valid SPL token mint account
     pub drmr_mint: AccountInfo<'info>,
     
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
 }

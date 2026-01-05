@@ -4,6 +4,7 @@ pub mod actions;
 use actions::*;
 
 pub mod config;
+pub mod global;
 pub mod error;
 
 declare_id!("FfmtpodpDxLvyWvNi7B6NmpVx1m2LjLm2wK8jZRaTYvX");
@@ -20,8 +21,8 @@ pub mod drmr_staking {
         actions::stake(ctx, stake_amount, stake_periods)
     }
 
-    pub fn unstake(ctx: Context<Unstake>) -> Result<()> {
-        actions::unstake(ctx)
+    pub fn unstake(ctx: Context<Unstake>, unstake_amount: u64) -> Result<()> {
+        actions::unstake(ctx, unstake_amount)
     }
 
     pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
@@ -32,8 +33,22 @@ pub mod drmr_staking {
         actions::get_reward(ctx)
     }
 
-    pub fn update_pool_config(ctx: Context<UpdateConfig>) -> Result<()> {
-        actions::update_pool_config(ctx)
+    pub fn update_pool_config(
+        ctx: Context<UpdateConfig>,
+        new_admin: Option<Pubkey>,
+        new_stake_epoch_cycles: Option<u64>,
+        new_reward_cycle_seconds: Option<u64>,
+        new_apy_bps: Option<u16>,
+        new_is_active: Option<bool>,
+    ) -> Result<()> {
+        actions::update_pool_config(
+            ctx,
+            new_admin,
+            new_stake_epoch_cycles,
+            new_reward_cycle_seconds,
+            new_apy_bps,
+            new_is_active,
+        )
     }
 
     pub fn close(ctx: Context<Close>) -> Result<()> {

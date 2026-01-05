@@ -4,6 +4,10 @@ use anchor_lang::prelude::*;
 pub enum StakingError {
     #[msg("Unauthorized User")]
     Unauthorized,
+    #[msg("Invalid MiNt account")]
+    InvalidMint,
+    #[msg("Unstake amount > Staked balance")]
+    InsufficientStake,
     #[msg("Invalid reward cycle")]
     InvalidRewardCycle,
     #[msg("Invalid APY")]

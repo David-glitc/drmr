@@ -7,7 +7,6 @@ pub struct StakingPool {
     pub admin: Pubkey,
     pub drmr_mint: Pubkey,
     /// Maximum allowed epoch cycles for stake lock-up periods
-    /// Stakers can choose any value from 0 (no lock-up) up to this maximum
     pub stake_epoch_cycles: u64,
     /// Reward cycle in seconds
     pub reward_cycle_seconds: u64,
@@ -17,11 +16,10 @@ pub struct StakingPool {
     pub total_staked: u64,
     /// Total number of stakers
     pub total_stakers: u64,
-    // Note: Stakers are stored in separate PDA accounts, not in a Vec here
-    // This avoids CU costs and account size limits. Each Staker account has a 'pool' field
-    // to link it back to this pool. Use PDA seeds: [b"staker", pool.key(), user.key()]
     /// Total rewards distributed
     pub total_rewards_distributed: u64,
+    /// rewards still available in reward pool
+    pub rewards_in_pool: u64,
     /// Pool active status
     pub is_active: bool,
     /// Pool creation timestamp
@@ -30,20 +28,6 @@ pub struct StakingPool {
     pub last_reward_distribution: i64,
 }
 
-// impl StakingPool {
-//     pub const LEN: usize = 8 + // discriminator
-//         32 + // admin
-//         32 + // drmr_mint
-//         8 +  // stake_epoch_cycles
-//         8 +  // reward_cycle_seconds
-//         2 +  // apy_bps
-//         8 +  // total_staked
-//         8 +  // total_stakers
-//         8 +  // total_rewards_distributed
-//         1 +  // is_active
-//         8 +  // created_at
-//         8; // last_reward_distribution
-// }
 
 #[account]
 #[derive(InitSpace)]
@@ -51,7 +35,7 @@ pub struct Staker {
     /// Links staker to their staking pool
     pub pool: Pubkey, 
     pub user: Pubkey,
-    /// Staked amount
+    /// Currently staked amount (active tokens in pool, decreases on unstake)
     pub amount: u64,
     /// Number of epoch cycles staked
     pub stake_periods: u8,
@@ -63,15 +47,8 @@ pub struct Staker {
     pub last_claim: i64,
     /// Total rewards claimed by this staker
     pub total_rewards_claimed: u64,
+    /// available rewards in the reward vault that the user can claim
+    pub available_rewards: u64,
+    /// Lifetime cumulative total of tokens ever staked (never decreases, includes unstaked tokens)
+    pub total_token_staked: u64,
 }
-
-// impl Staker {
-//     pub const LEN: usize = 8 + // discriminator
-//         32 + // user
-//         8 +  // amount
-//         1 +  // stake_periods
-//         8 +  // staked_at
-//         8 +  // stake_end_time
-//         8 +  // last_claim
-//         8; // total_rewards_claimed
-// }

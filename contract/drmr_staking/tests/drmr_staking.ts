@@ -2,6 +2,10 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program, BN } from "@coral-xyz/anchor";
 import { DrmrStaking } from "../target/types/drmr_staking";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
+import * as dotenv from "dotenv";
+
+// Load environment variables from .env.local file
+dotenv.config({ path: ".env.local" });
 
 describe("drmr_staking", () => {
   // Configure the client to use the local cluster.
