@@ -5,14 +5,16 @@ package_manager = "yarn"
 resolution = true
 skip-lint = false
 
-[programs.localnet]
+# [programs.localnet]
+[programs.devnet]
 drmr_staking = "FfmtpodpDxLvyWvNi7B6NmpVx1m2LjLm2wK8jZRaTYvX"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+# cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

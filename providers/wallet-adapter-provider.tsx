@@ -93,18 +93,32 @@ function InnerProvider({ children }: { children: ReactNode }) {
     return publicEndpoint;
   }, [network]);
   
-  const wallets = useMemo(
-    () => [
+  const wallets = useMemo(() => {
+    // Create wallet adapters - only Solana wallets (not MetaMask/EVM wallets)
+    const walletAdapters = [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
-    ],
-    []
-  );
+    ];
+    
+    // Ensure each wallet has a unique, stable identity
+    // Filter out any duplicates by name to prevent React key warnings
+    const seen = new Set<string>();
+    const uniqueWallets = walletAdapters.filter((wallet) => {
+      const name = wallet.name || wallet.constructor.name;
+      if (seen.has(name)) {
+        return false;
+      }
+      seen.add(name);
+      return true;
+    });
+    
+    return uniqueWallets;
+  }, []);
 
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
+        <WalletModalProvider key="wallet-modal-provider">
           <NetworkInitializer />
           <NetworkSync />
           {children}

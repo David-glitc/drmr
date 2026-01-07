@@ -1,0 +1,13 @@
+{
+    "name": "DRMR Token",
+    "symbol": "DRMR",
+    "description": "DRMR Staking Token",
+    "image": "https://printed-red-emu.myfilebase.com/ipfs/QmWBj1cBXYaFNjsr9MJx6FUeA8ZKe1sJGRcL8TAuCzTjqW",
+    "external_url": "",
+    "attributes": [
+      {
+        "trait_type": "Category",
+        "value": "Staking Token"
+      }
+    ]
+  }

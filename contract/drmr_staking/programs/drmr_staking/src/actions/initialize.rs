@@ -15,14 +15,14 @@ pub fn initialize(
     // Derive the trusted admin PDA address
     // All pools will have this trusted admin as their admin
     //@NOTE this admin address will be a hardcoded normal solana address
-    let (trusted_admin_pda, _bump) = Pubkey::find_program_address(
-        &[b"trusted_admin"],
-        ctx.program_id,
-    );
-    
+    // let (trusted_admin_pda, _bump) = Pubkey::find_program_address(
+    //     &[b"trusted_admin"],
+    //     ctx.program_id,
+    // );
+    let trusted_admin = Pubkey::from_str_const("9ptLw6PHCEhaJw5kEjpQ6eTDwsPoqLM3E64gtzo2Fe8");
     // Set the trusted admin PDA as the pool admin (not the creator)
     // The creator pays for pool creation but doesn't become admin
-    pool.admin = trusted_admin_pda;
+    pool.admin = trusted_admin;
 
     // Validate and set mint address
     // TODO: Add proper validation to ensure it's a valid SPL token mint account

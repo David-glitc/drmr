@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { BN } from "@coral-xyz/anchor";
 import {
   Area,
   AreaChart,
@@ -10,6 +11,8 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+// Added this 
+import { useQuery } from "@tanstack/react-query";
 
 import { useAnalytics } from "../../../hooks/useAnalytics";
 import { useStaking } from "../../../hooks/useStaking";
@@ -22,6 +25,10 @@ import { useSolPrice } from "../../../hooks/useSolPrice";
 import { ReceiveModal } from "../../../components/ReceiveModal";
 import { stakingService } from "../../../lib/services";
 import type { ValidatorInfo } from "../../../lib/services/validator-service";
+
+// My addition from my contract integration
+import { useDrmrStaking } from "../../../hooks/useDrmrStaking";
+import { useDrmrToken } from "../../../hooks/useDrmrToken";
 
 const fallbackAllocation = [
   { label: "SOL Stakers", value: 54, fill: "#3b82f6" },
@@ -45,10 +52,93 @@ export default function StakingPage() {
   const { validators, isLoading: validatorsLoading } = useValidators(true); // Sync with DB
   const { createStakingRecord, isCreating: isCreatingStake } = useStakingRecords();
   const { createAndDelegateStake, getStakeBalance, isReady: isStakingReady } = useSolanaStaking();
+
+  // My addition from the contract
+  const DRMR_MINT = process.env.NEXT_PUBLIC_DRMR_MINT || ""; // Add to .env.local
+  
+  // Debug: Log DRMR_MINT to verify it's being read (remove in production)
+  useEffect(() => {
+    if (DRMR_MINT) {
+      console.log("[DRMR] Mint address loaded:", DRMR_MINT);
+    } else {
+      console.warn("[DRMR] Mint address not found in environment variables");
+    }
+  }, [DRMR_MINT]);
+  
+  const { data: drmrBalance } = useDrmrToken(DRMR_MINT);
+  const {
+    stake: stakeDrmr,
+    getReward: claimReward,
+    withdraw: withdrawRewards,
+    unstake: unstakeDrmr,
+    fetchStaker,
+    fetchStakingPool,
+    isLoading: isDrmrStakingLoading,
+    error: drmrStakingError,
+  } = useDrmrStaking();
+
+  // Fetch pool and staker data
+  const { data: stakingPool } = useQuery({
+    queryKey: ["staking-pool"],
+    queryFn: fetchStakingPool,
+    refetchInterval: 30000,
+  });
+
+  const { data: stakerData } = useQuery({
+    queryKey: ["staker", walletAddress],
+    queryFn: fetchStaker,
+    enabled: !!walletAddress,
+    refetchInterval: 30000,
+  });
+
+  // Automatic get_reward execution every 15 minutes (900000ms)
+  useEffect(() => {
+    if (!walletAddress || !DRMR_MINT || !stakerData || tokenType !== "DRMR") return;
+
+    // Check if user has staked tokens
+    const hasStaked = Number(stakerData.amount) > 0;
+    if (!hasStaked) return;
+
+    const interval = setInterval(async () => {
+      try {
+        console.log("[Auto Claim] Automatically claiming rewards...");
+        await claimReward(DRMR_MINT);
+        console.log("[Auto Claim] Rewards claimed successfully");
+        // Refetch staker data after claiming
+        fetchStaker();
+      } catch (error) {
+        console.error("[Auto Claim] Failed to claim rewards:", error);
+        // Don't show error to user for automatic claims
+      }
+    }, 15 * 60 * 1000); // 15 minutes
+
+    // Also claim immediately if enough time has passed since last claim
+    const checkAndClaim = async () => {
+      try {
+        const now = Math.floor(Date.now() / 1000);
+        const lastClaim = Number(stakerData.lastClaim);
+        const rewardCycleSeconds = stakingPool?.rewardCycleSeconds ? Number(stakingPool.rewardCycleSeconds) : 300; // Default 5 minutes
+        
+        if (now - lastClaim >= rewardCycleSeconds) {
+          console.log("[Auto Claim] Claiming rewards (cycle ready)...");
+          await claimReward(DRMR_MINT);
+          fetchStaker();
+        }
+      } catch (error) {
+        console.error("[Auto Claim] Failed to claim rewards:", error);
+      }
+    };
+
+    checkAndClaim();
+
+    return () => clearInterval(interval);
+  }, [walletAddress, DRMR_MINT, stakerData, stakingPool, tokenType, claimReward, fetchStaker]);
   
   const [stakeAmount, setStakeAmount] = useState("");
   const [selectedValidator, setSelectedValidator] = useState<string>("");
   const [tokenType, setTokenType] = useState<"SOL" | "DRMR">("SOL");
+  // added by totding
+  const [stakePeriods, setStakePeriods] = useState<number>(1); // Default to 1 epoch cycle for DRMR
   const [isStakeModalOpen, setIsStakeModalOpen] = useState(false);
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
   const [isStaking, setIsStaking] = useState(false);
@@ -65,10 +155,14 @@ export default function StakingPage() {
   const selectedValidatorInfo = validators.find(v => v.voteAccount === selectedValidator) as (ValidatorInfo & { id?: string }) | undefined;
   
   const minStakeAmount = 0.012306085;
-  const hasInsufficientBalance = solanaAccount 
-    ? solanaAccount.balanceSol < minStakeAmount 
-    : true;
-  const canStake = tokenType === "SOL" && stakeAmount && parseFloat(stakeAmount) >= minStakeAmount && !hasInsufficientBalance;
+  const minDrmrStakeAmount = 0.001; // Minimum DRMR stake amount
+  const hasInsufficientBalance = tokenType === "SOL" 
+    ? (solanaAccount ? solanaAccount.balanceSol < minStakeAmount : true)
+    : (drmrBalance ? drmrBalance.balance < minDrmrStakeAmount : true);
+  
+  const canStake = tokenType === "SOL" 
+    ? stakeAmount && parseFloat(stakeAmount) >= minStakeAmount && !hasInsufficientBalance
+    : stakeAmount && parseFloat(stakeAmount) >= minDrmrStakeAmount && !hasInsufficientBalance && !!DRMR_MINT;
   
   // Calculate annual return based on selected validator
   const annualReturn = selectedValidatorInfo && stakeAmount
@@ -151,17 +245,14 @@ export default function StakingPage() {
                     SOL
                   </button>
                   <button
-                    onClick={() => {}}
-                    disabled={true}
-                    className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition cursor-not-allowed ${
+                    onClick={() => setTokenType("DRMR")}
+                    className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition ${
                       tokenType === "DRMR"
-                        ? "border-red-500/50 bg-red-500/10 text-white/50"
-                        : "border-white/10 bg-white/5 text-white/40 opacity-50"
+                        ? "border-red-500 bg-red-500/10 text-white"
+                        : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
                     }`}
-                    title="DRMR staking coming soon"
                   >
                     DRMR
-                    <span className="ml-2 text-xs">(Coming Soon)</span>
                   </button>
                 </div>
               </div>
@@ -171,7 +262,10 @@ export default function StakingPage() {
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-sm text-white/70">Amount</label>
                   <span className="text-xs text-white/60">
-                    Max: {solanaAccount?.balanceSol.toFixed(4) || "0"} {tokenType}
+                    Max: {tokenType === "SOL" 
+                      ? (solanaAccount?.balanceSol.toFixed(4) || "0")
+                      : (drmrBalance?.balance.toFixed(4) || "0")
+                    } {tokenType}
                   </span>
                 </div>
                 
@@ -181,25 +275,28 @@ export default function StakingPage() {
                     <button
                       key={percent}
                       onClick={() => {
-                        if (solanaAccount && tokenType === "SOL") {
+                        if (tokenType === "SOL" && solanaAccount) {
                           const value = (solanaAccount.balanceSol * percent) / 100;
                           setStakeAmount(value.toFixed(9).replace(/\.?0+$/, ""));
+                        } else if (tokenType === "DRMR" && drmrBalance) {
+                          const value = (drmrBalance.balance * percent) / 100;
+                          setStakeAmount(value.toFixed(4).replace(/\.?0+$/, ""));
                         }
                       }}
-                      disabled={tokenType === "DRMR"}
-                      className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
                     >
                       {percent}%
                     </button>
                   ))}
                   <button
                     onClick={() => {
-                      if (solanaAccount && tokenType === "SOL") {
+                      if (tokenType === "SOL" && solanaAccount) {
                         setStakeAmount(solanaAccount.balanceSol.toFixed(9).replace(/\.?0+$/, ""));
+                      } else if (tokenType === "DRMR" && drmrBalance) {
+                        setStakeAmount(drmrBalance.balance.toFixed(4).replace(/\.?0+$/, ""));
                       }
                     }}
-                    disabled={tokenType === "DRMR"}
-                    className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-blue-400 transition hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-blue-400 transition hover:bg-white/10"
                   >
                     Max
                   </button>
@@ -240,8 +337,7 @@ export default function StakingPage() {
                       }
                     }}
                     placeholder="0"
-                      disabled={tokenType === "DRMR"}
-                      className="flex-1 bg-transparent text-base font-semibold text-white outline-none placeholder:text-white/40 disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
+                    className="flex-1 bg-transparent text-base font-semibold text-white outline-none placeholder:text-white/40 min-w-0"
                   />
                     <span className="text-xs text-white/60 font-medium">{tokenType}</span>
                     {solPrice && stakeAmount && tokenType === "SOL" && (
@@ -253,30 +349,78 @@ export default function StakingPage() {
                 </div>
 
                 {/* Slider */}
-                {solanaAccount && solanaAccount.balanceSol > 0 && tokenType === "SOL" && (
+                {((tokenType === "SOL" && solanaAccount && solanaAccount.balanceSol > 0) ||
+                  (tokenType === "DRMR" && drmrBalance && drmrBalance.balance > 0)) && (
                   <div className="relative">
                     <input
                       type="range"
                       min="0"
-                      max={solanaAccount.balanceSol}
-                      step="0.01"
+                      max={tokenType === "SOL" 
+                        ? solanaAccount?.balanceSol || 0
+                        : drmrBalance?.balance || 0
+                      }
+                      step={tokenType === "SOL" ? "0.01" : "0.001"}
                       value={stakeAmount || 0}
                       onChange={(e) => {
                         const value = parseFloat(e.target.value);
-                        setStakeAmount(value.toFixed(9).replace(/\.?0+$/, ""));
+                        setStakeAmount(tokenType === "SOL" 
+                          ? value.toFixed(9).replace(/\.?0+$/, "")
+                          : value.toFixed(4).replace(/\.?0+$/, "")
+                        );
                       }}
-                      className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#0a0a0f] [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-blue-500 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#0a0a0f] [&::-moz-range-thumb]:border-none"
+                      className={`w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#0a0a0f] [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#0a0a0f] [&::-moz-range-thumb]:border-none ${
+                        tokenType === "SOL" 
+                          ? "[&::-webkit-slider-thumb]:bg-blue-500 [&::-moz-range-thumb]:bg-blue-500"
+                          : "[&::-webkit-slider-thumb]:bg-red-500 [&::-moz-range-thumb]:bg-red-500"
+                      }`}
                       style={{
-                        background: solanaAccount.balanceSol > 0
-                          ? `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((parseFloat(stakeAmount || "0") / solanaAccount.balanceSol) * 100)}%, rgba(255,255,255,0.1) ${((parseFloat(stakeAmount || "0") / solanaAccount.balanceSol) * 100)}%, rgba(255,255,255,0.1) 100%)`
-                          : undefined
+                        background: (() => {
+                          const maxBalance = tokenType === "SOL" 
+                            ? solanaAccount?.balanceSol || 0
+                            : drmrBalance?.balance || 0;
+                          const currentAmount = parseFloat(stakeAmount || "0");
+                          const percent = maxBalance > 0 ? (currentAmount / maxBalance) * 100 : 0;
+                          const color = tokenType === "SOL" ? "#3b82f6" : "#ef4444";
+                          return `linear-gradient(to right, ${color} 0%, ${color} ${percent}%, rgba(255,255,255,0.1) ${percent}%, rgba(255,255,255,0.1) 100%)`;
+                        })()
                       }}
                     />
                   </div>
                 )}
               </div>
 
-              {/* Validator Selection */}
+              {/* Stake Period Selection (DRMR only) */}
+              {tokenType === "DRMR" && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <label className="text-sm text-white/70">Stake Period (Epoch Cycles)</label>
+                    <svg className="h-4 w-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[1, 2, 3, 4].map((periods) => (
+                      <button
+                        key={periods}
+                        onClick={() => setStakePeriods(periods)}
+                        className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${
+                          stakePeriods === periods
+                            ? "border-red-500 bg-red-500/10 text-white"
+                            : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+                        }`}
+                      >
+                        {periods} {periods === 1 ? "Cycle" : "Cycles"}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-white/60">
+                    Longer stake periods may offer better rewards. Tokens are locked until the period ends.
+                  </p>
+                </div>
+              )}
+
+              {/* Validator Selection (SOL only) */}
+              {tokenType === "SOL" && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <label className="text-sm text-white/70">Select Validator</label>
@@ -340,9 +484,120 @@ export default function StakingPage() {
                   </div>
                 )}
               </div>
+              )}
 
-              {/* Annual Return */}
-              {selectedValidatorInfo && stakeAmount && (
+              {/* DRMR Staking Pool Info */}
+              {tokenType === "DRMR" && stakingPool && (
+                <div className="mb-6 rounded-xl border border-white/10 bg-[#0a0a0f] p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-white/70">Pool APY</span>
+                    <span className="text-sm font-semibold text-white">
+                      {(stakingPool.apyBps / 100).toFixed(2)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-white/70">Total Staked</span>
+                    <span className="text-sm font-semibold text-white">
+                      {(Number(stakingPool.totalStaked) / 1e9).toFixed(2)} DRMR
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-white/70">Total Stakers</span>
+                    <span className="text-sm font-semibold text-white">
+                      {stakingPool.totalStakers.toString()}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Your DRMR Staking Info */}
+              {tokenType === "DRMR" && stakerData && (
+                <div className="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
+                  <p className="text-sm font-semibold text-green-400 mb-2">Your Staking</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-white/70">Staked Amount</span>
+                    <span className="text-xs font-semibold text-white">
+                      {(Number(stakerData.amount) / 1e9).toFixed(4)} DRMR
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-white/70">Available Rewards</span>
+                    <span className="text-xs font-semibold text-white">
+                      {(Number(stakerData.availableRewards) / 1e9).toFixed(4)} DRMR
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs text-white/70">Total Rewards Claimed</span>
+                    <span className="text-xs font-semibold text-white">
+                      {(Number(stakerData.totalRewardsClaimed) / 1e9).toFixed(4)} DRMR
+                    </span>
+                  </div>
+                  
+                  {/* Withdraw and Unstake Buttons */}
+                  <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-green-500/20">
+                    {Number(stakerData.availableRewards) > 0 && (
+                      <button
+                        onClick={async () => {
+                          if (!DRMR_MINT || !walletAddress) return;
+                          try {
+                            setIsStaking(true);
+                            setStakingError(null);
+                            setStakingSuccess(null);
+                            await withdrawRewards(DRMR_MINT);
+                            setStakingSuccess("Rewards withdrawn successfully!");
+                            fetchStaker();
+                            setTimeout(() => setStakingSuccess(null), 3000);
+                          } catch (error: any) {
+                            setStakingError(error.message || "Failed to withdraw rewards");
+                          } finally {
+                            setIsStaking(false);
+                          }
+                        }}
+                        disabled={isDrmrStakingLoading || isStaking}
+                        className="w-full rounded-xl border border-green-500/50 bg-green-500/10 px-4 py-2.5 text-sm font-semibold text-green-400 transition hover:bg-green-500/20 hover:border-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isDrmrStakingLoading || isStaking ? "Withdrawing..." : "Withdraw Rewards"}
+                      </button>
+                    )}
+                    
+                    {Number(stakerData.amount) > 0 && (
+                      <button
+                        onClick={async () => {
+                          if (!DRMR_MINT || !walletAddress) return;
+                          const unstakeAmount = Number(stakerData.amount) / 1e9;
+                          try {
+                            setIsStaking(true);
+                            setStakingError(null);
+                            setStakingSuccess(null);
+                            await unstakeDrmr(unstakeAmount, DRMR_MINT);
+                            setStakingSuccess(`Successfully unstaked ${unstakeAmount.toFixed(4)} DRMR!`);
+                            fetchStaker();
+                            setTimeout(() => setStakingSuccess(null), 3000);
+                          } catch (error: any) {
+                            setStakingError(error.message || "Failed to unstake");
+                          } finally {
+                            setIsStaking(false);
+                          }
+                        }}
+                        disabled={isDrmrStakingLoading || isStaking}
+                        className="w-full rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 hover:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isDrmrStakingLoading || isStaking ? "Unstaking..." : "Unstake All"}
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Auto Claim Info */}
+                  <div className="mt-3 pt-3 border-t border-green-500/10">
+                    <p className="text-xs text-white/50 text-center">
+                      Rewards are automatically claimed every 15 minutes
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Annual Return (SOL only) */}
+              {tokenType === "SOL" && selectedValidatorInfo && stakeAmount && (
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-sm text-white/70">Annual return</span>
@@ -356,8 +611,8 @@ export default function StakingPage() {
                 </div>
               )}
 
-              {/* Total Stake */}
-              {selectedValidatorInfo && (
+              {/* Total Stake (SOL only) */}
+              {tokenType === "SOL" && selectedValidatorInfo && (
                 <div className="mb-6">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-sm text-white/70">Total stake</span>
@@ -374,7 +629,7 @@ export default function StakingPage() {
               )}
 
               {/* Error Message */}
-              {hasInsufficientBalance && (
+              {hasInsufficientBalance && tokenType === "SOL" && (
                 <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
                   <p className="text-sm font-semibold text-red-400 mb-1">Balance too low to stake</p>
                   <p className="text-xs text-white/70">
@@ -400,10 +655,39 @@ export default function StakingPage() {
                 </div>
               )}
 
+              {/* DRMR Error Message */}
+              {hasInsufficientBalance && tokenType === "DRMR" && (
+                <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+                  <p className="text-sm font-semibold text-red-400 mb-1">Balance too low to stake</p>
+                  <p className="text-xs text-white/70">
+                    You need at least {minDrmrStakeAmount} DRMR to start staking.
+                  </p>
+                </div>
+              )}
+
+              {/* DRMR Mint Error */}
+              {tokenType === "DRMR" && !DRMR_MINT && (
+                <div className="mb-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">
+                  <p className="text-sm font-semibold text-yellow-400 mb-1">DRMR Mint Not Configured</p>
+                  <p className="text-xs text-white/70">
+                    Please set NEXT_PUBLIC_DRMR_MINT in your .env.local file.
+                  </p>
+                </div>
+              )}
+
               {/* Stake Button */}
               <button
                 onClick={async () => {
-                  if (!canStake || !selectedValidatorInfo || !walletAddress || !isStakingReady) return;
+                  if (!canStake || !walletAddress) return;
+                  
+                  // SOL-specific validation
+                  if (tokenType === "SOL" && (!selectedValidatorInfo || !isStakingReady)) return;
+                  
+                  // DRMR-specific validation
+                  if (tokenType === "DRMR" && !DRMR_MINT) {
+                    setStakingError("DRMR mint address not configured");
+                    return;
+                  }
                   
                   try {
                     setIsStaking(true);
@@ -414,21 +698,46 @@ export default function StakingPage() {
                     if (!walletAddress) {
                       throw new Error("Wallet not connected");
                     }
-                    if (!selectedValidatorInfo) {
-                      throw new Error("Please select a validator");
-                    }
-                    if (!isStakingReady) {
-                      throw new Error("Staking service not ready");
-                    }
                     
                     const amount = parseFloat(stakeAmount);
                     if (isNaN(amount) || amount <= 0) {
                       throw new Error("Invalid stake amount");
                     }
                     
-                    // Only allow SOL staking for now
-                    if (tokenType !== "SOL") {
-                      throw new Error("DRMR staking is not yet available");
+                    // Handle DRMR staking
+                    if (tokenType === "DRMR") {
+                      if (!DRMR_MINT) {
+                        throw new Error("DRMR mint address not configured");
+                      }
+                      
+                      console.log(`[DRMR Staking] Starting stake process...`);
+                      console.log(`[DRMR Staking] Amount: ${amount} DRMR`);
+                      console.log(`[DRMR Staking] Stake Periods: ${stakePeriods}`);
+                      console.log(`[DRMR Staking] Wallet: ${walletAddress}`);
+                      
+                      const tx = await stakeDrmr(amount, stakePeriods, DRMR_MINT);
+                      console.log(`[DRMR Staking] ✓ Transaction: ${tx}`);
+                      
+                      const successMessage = `Successfully staked ${amount} DRMR for ${stakePeriods} epoch cycle${stakePeriods > 1 ? 's' : ''}`;
+                      setStakingSuccess(successMessage);
+                      setStakingError(null);
+                      
+                      // Reset form after delay
+                      setTimeout(() => {
+                        setStakeAmount("");
+                        setIsStakeModalOpen(false);
+                        setStakingSuccess(null);
+                      }, 3000);
+                      
+                      return;
+                    }
+                    
+                    // Handle SOL staking (existing logic)
+                    if (!selectedValidatorInfo) {
+                      throw new Error("Please select a validator");
+                    }
+                    if (!isStakingReady) {
+                      throw new Error("Staking service not ready");
                     }
                     
                     console.log(`[Staking] Starting stake process...`);
@@ -512,14 +821,23 @@ export default function StakingPage() {
                     setIsStaking(false);
                   }
                 }}
-                disabled={!canStake || isStaking || isCreatingStake || !isStakingReady}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={
+                  !canStake || 
+                  isStaking || 
+                  isCreatingStake || 
+                  isDrmrStakingLoading ||
+                  (tokenType === "SOL" && !isStakingReady) ||
+                  (tokenType === "DRMR" && !DRMR_MINT)
+                }
+                className={`w-full rounded-xl border px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 ${
+                  tokenType === "DRMR" 
+                    ? "border-red-500/50 bg-red-500/10"
+                    : "border-white/10 bg-white/5"
+                }`}
               >
-                {tokenType === "DRMR" 
-                  ? "DRMR Staking Coming Soon" 
-                  : isStaking || isCreatingStake 
-                    ? "Staking..." 
-                    : `Stake ${tokenType}`
+                {isStaking || isCreatingStake || isDrmrStakingLoading
+                  ? "Staking..." 
+                  : `Stake ${tokenType}`
                 }
               </button>
             </div>

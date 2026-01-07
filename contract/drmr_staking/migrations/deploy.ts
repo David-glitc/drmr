@@ -3,7 +3,7 @@
 // configured from the workspace's Anchor.toml.
 
 import * as anchor from "@coral-xyz/anchor";
-import * as dotenv from "dotenv";
+const dotenv = require("dotenv");
 
 // Load environment variables from .env.local file
 dotenv.config({ path: ".env.local" });
