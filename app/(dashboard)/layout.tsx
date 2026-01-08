@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, type ReactNode } from "react";
 
-import { navItems, settingsNav, adminNavItem } from "../../lib/nav";
+import { navItems, settingsNav, adminNavItem, stakingAdminNavItem } from "../../lib/nav";
+import { useAdminVerification } from "../../hooks/useAdminVerification";
 import { useWallet } from "../../hooks/useWallet";
 import { useSolanaAccount } from "../../hooks/useSolanaAccount";
 import { useSolPrice } from "../../hooks/useSolPrice";
@@ -66,6 +67,7 @@ export default function DashboardLayout({
   const { data: solPrice } = useSolPrice();
   useTokenLogoCache(); // Initialize and cleanup token logo cache
   const { isReady, isChecking } = useConnectionReady(); // Check if connection is ready
+  const { isAdmin: isStakingAdmin } = useAdminVerification(); // Check if connected wallet is staking admin
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
@@ -199,6 +201,25 @@ export default function DashboardLayout({
                   {iconMap[adminNavItem.icon]}
                 </span>
                 {adminNavItem.label}
+              </Link>
+            )}
+            
+            {/* Staking Admin Link - Only shown when trusted admin wallet is connected */}
+            {isStakingAdmin && (
+              <Link
+                key={stakingAdminNavItem.key}
+                href={stakingAdminNavItem.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
+                  pathname === stakingAdminNavItem.href
+                    ? "bg-white/10 text-white"
+                    : "text-white/70 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <span className={pathname === stakingAdminNavItem.href ? "text-red-500" : "text-white/50"}>
+                  {iconMap[stakingAdminNavItem.icon]}
+                </span>
+                {stakingAdminNavItem.label}
               </Link>
             )}
           </nav>

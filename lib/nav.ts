@@ -12,6 +12,22 @@ export const adminNavItem = {
   icon: "gear",
 } as const;
 
+// Staking Admin nav item (only shown when trusted admin wallet is connected)
+export const stakingAdminNavItem = {
+  key: "staking-admin",
+  label: "Admin",
+  href: "/staking-admin",
+  icon: "gear",
+} as const;
+
+// Staking Initialize nav item (only shown when trusted admin wallet is connected)
+export const stakingInitializeNavItem = {
+  key: "staking-initialize",
+  label: "Initialize Pool",
+  href: "/staking-initialize",
+  icon: "gear",
+} as const;
+
 export const settingsNav = {
   key: "settings",
   label: "Settings",

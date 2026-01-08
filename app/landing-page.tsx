@@ -1,14 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useWallet } from "../hooks/useWallet";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LoadingOverlay } from "../components/LoadingOverlay";
 import { NetworkToggle } from "../components/NetworkToggle";
 
 export default function LandingPage() {
+  const router = useRouter();
   const { walletAddress, isConnected, isConnecting, connect, disconnect } = useWallet();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Redirect to staking page when wallet connects
+  useEffect(() => {
+    if (isConnected && walletAddress) {
+      router.push("/staking");
+    }
+  }, [isConnected, walletAddress, router]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-white scroll-smooth">

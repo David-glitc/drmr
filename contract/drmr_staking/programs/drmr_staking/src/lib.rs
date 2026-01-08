@@ -54,5 +54,9 @@ pub mod drmr_staking {
     pub fn close(ctx: Context<Close>) -> Result<()> {
         actions::close(ctx)
     }
+
+    pub fn close_token(ctx: Context<CloseToken>) -> Result<()> {
+        actions::close_token(ctx)
+    }
 }
 

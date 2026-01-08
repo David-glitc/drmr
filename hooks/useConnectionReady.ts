@@ -16,8 +16,17 @@ export function useConnectionReady() {
 
   useEffect(() => {
     let mounted = true;
-    let timeoutId: NodeJS.Timeout;
-    let checkTimeoutId: NodeJS.Timeout;
+    let maxTimeoutId: NodeJS.Timeout;
+    let connectionCheckId: NodeJS.Timeout;
+
+    // Set a maximum timeout FIRST to ensure we never wait forever
+    maxTimeoutId = setTimeout(() => {
+      if (mounted) {
+        console.warn("[useConnectionReady] Max timeout (2s) reached, marking as ready");
+        setIsReady(true);
+        setIsChecking(false);
+      }
+    }, 2000); // Reduced to 2 seconds max
 
     const checkConnection = async () => {
       if (!mounted) return;
@@ -25,68 +34,69 @@ export function useConnectionReady() {
       try {
         setIsChecking(true);
         
-        // Wait a bit for connection to initialize
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        if (!mounted) return;
+        // Try to get connection version with a very short timeout
+        // If this fails, we'll just mark as ready anyway
+        connectionCheckId = setTimeout(() => {
+          if (mounted) {
+            console.warn("[useConnectionReady] Connection check timeout, marking as ready");
+            setIsReady(true);
+            setIsChecking(false);
+          }
+        }, 1500); // Fail after 1.5 seconds
 
-        // Try to get connection version - this verifies connection is working
         try {
           await Promise.race([
             connection.getVersion(),
             new Promise((_, reject) => 
-              setTimeout(() => reject(new Error("Timeout")), 3000)
+              setTimeout(() => reject(new Error("Connection timeout")), 1500)
             )
           ]);
+          
+          // Clear the timeout since we succeeded
+          if (connectionCheckId) {
+            clearTimeout(connectionCheckId);
+          }
           
           if (mounted) {
             setIsReady(true);
             setIsChecking(false);
           }
         } catch (error) {
-          // Connection might not be ready yet, but we'll mark as ready after delay
-          // to prevent infinite loading (connection might be slow but functional)
+          // Clear the timeout
+          if (connectionCheckId) {
+            clearTimeout(connectionCheckId);
+          }
+          console.warn("[useConnectionReady] Connection check failed, marking as ready:", error);
+          // Mark as ready immediately if connection check fails
           if (mounted) {
-            checkTimeoutId = setTimeout(() => {
-              if (mounted) {
-                setIsReady(true);
-                setIsChecking(false);
-              }
-            }, 800);
+            setIsReady(true);
+            setIsChecking(false);
           }
         }
       } catch (error) {
-        console.warn("[useConnectionReady] Connection check error:", error);
-        // Still mark as ready after delay to prevent infinite loading
+        // Clear the timeout
+        if (connectionCheckId) {
+          clearTimeout(connectionCheckId);
+        }
+        console.warn("[useConnectionReady] Connection check error, marking as ready:", error);
+        // Mark as ready immediately on error
         if (mounted) {
-          timeoutId = setTimeout(() => {
-            if (mounted) {
-              setIsReady(true);
-              setIsChecking(false);
-            }
-          }, 1500);
+          setIsReady(true);
+          setIsChecking(false);
         }
       }
     };
 
-    // Initial check
+    // Start check immediately
     checkConnection();
-
-    // Also set a maximum timeout to ensure we don't wait forever
-    timeoutId = setTimeout(() => {
-      if (mounted) {
-        setIsReady(true);
-        setIsChecking(false);
-      }
-    }, 2000);
 
     return () => {
       mounted = false;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
+      if (maxTimeoutId) {
+        clearTimeout(maxTimeoutId);
       }
-      if (checkTimeoutId) {
-        clearTimeout(checkTimeoutId);
+      if (connectionCheckId) {
+        clearTimeout(connectionCheckId);
       }
     };
   }, [connection]);

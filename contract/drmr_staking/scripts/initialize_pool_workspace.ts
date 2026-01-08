@@ -8,9 +8,14 @@
 // Set environment variables BEFORE importing anchor
 require("dotenv").config({ path: ".env.local" });
 
-// Set ANCHOR_PROVIDER_URL if not already set
+// Set ANCHOR_PROVIDER_URL if not already set (must be before anchor import)
 if (!process.env.ANCHOR_PROVIDER_URL) {
-  process.env.ANCHOR_PROVIDER_URL = process.env.ANCHOR_PROVIDER_URL || "https://api.devnet.solana.com";
+  process.env.ANCHOR_PROVIDER_URL = "https://api.devnet.solana.com";
+}
+
+// Also set ANCHOR_WALLET if not set
+if (!process.env.ANCHOR_WALLET && process.env.HOME) {
+  process.env.ANCHOR_WALLET = `${process.env.HOME}/.config/solana/id.json`;
 }
 
 import * as anchor from "@coral-xyz/anchor";

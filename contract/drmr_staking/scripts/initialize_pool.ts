@@ -126,59 +126,52 @@ async function main() {
   const idlPath = path.join(__dirname, "..", "target", "idl", "drmr_staking.json");
   const idlJson = JSON.parse(fs.readFileSync(idlPath, "utf-8"));
   
-  // Calculate account sizes from type definitions and add to accounts
-  // Anchor 0.32.1 requires size property for account deserialization
-  const accountsWithSize = (idlJson.accounts || []).map((acc: any) => {
-    const typeDef = (idlJson.types || []).find((t: any) => t.name === acc.name);
-    if (typeDef && typeDef.type && typeDef.type.kind === "struct") {
-      // Calculate size: 8 bytes discriminator + sum of field sizes
-      let size = 8; // discriminator
-      const fields = typeDef.type.fields || [];
-      for (const field of fields) {
-        const fieldType = field.type;
-        if (fieldType === "u8") size += 1;
-        else if (fieldType === "u16") size += 2;
-        else if (fieldType === "u32") size += 4;
-        else if (fieldType === "u64" || fieldType === "i64") size += 8;
-        else if (fieldType === "bool") size += 1;
-        else if (fieldType === "pubkey" || fieldType === "publicKey") size += 32;
-        else if (typeof fieldType === "object") {
-          if (fieldType.vec) {
-            // Vector type - can't calculate exact size, use a reasonable default
-            size += 4; // length prefix
-          } else if (fieldType.option) {
-            // Option type - 1 byte for Some/None + size of inner type
-            size += 1;
-            const innerType = fieldType.option;
-            if (innerType === "u8") size += 1;
-            else if (innerType === "u16") size += 2;
-            else if (innerType === "u32") size += 4;
-            else if (innerType === "u64" || innerType === "i64") size += 8;
-            else if (innerType === "pubkey" || innerType === "publicKey") size += 32;
-          }
-        }
-      }
-      return { ...acc, size };
-    }
-    // If no type definition found, return account as-is (Anchor might handle it)
-    return acc;
-  });
+  // WORKAROUND for Anchor 0.32.1 account namespace bug
+  // InitSpace already includes the 8-byte discriminator, so INIT_SPACE values are correct
+  // We need to add size to accounts in the format Anchor expects
+  console.log("ℹ️  Creating program with account sizes (INIT_SPACE includes discriminator)...");
   
-  // Create IDL with accounts that have size information
-  const idlWithSizes: anchor.Idl = {
-    ...idlJson,
-    accounts: accountsWithSize,
+  // Account sizes from InitSpace (already includes 8-byte discriminator):
+  // StakingPool::INIT_SPACE = 131 (includes discriminator)
+  // Staker::INIT_SPACE = 129 (includes discriminator)
+  const accountSizes: { [key: string]: number } = {
+    StakingPool: 131,  // INIT_SPACE value (includes 8-byte discriminator)
+    Staker: 129,       // INIT_SPACE value (includes 8-byte discriminator)
   };
   
-  // Debug: log account structures
-  console.log("📊 Account structures:", JSON.stringify(accountsWithSize, null, 2));
+  // Ensure ALL accounts have size property
+  const accountsWithSize = (idlJson.accounts || []).map((acc: any) => {
+    const size = accountSizes[acc.name];
+    if (size === undefined) {
+      console.warn(`⚠️  No size found for account: ${acc.name}, using default`);
+      return { ...acc, size: 200 }; // Default size if not found
+    }
+    return {
+      name: acc.name,
+      discriminator: acc.discriminator,
+      size: size,
+    };
+  });
   
-  // Create program with IDL that includes size information
-  const program = new Program(
-    idlWithSizes,
-    PROGRAM_ID,
-    provider
-  ) as Program<DrmrStaking>;
+  // If no accounts in IDL, create empty array to avoid errors
+  const patchedIdl = {
+    ...idlJson,
+    accounts: accountsWithSize.length > 0 ? accountsWithSize : [],
+  };
+  
+  // Create program with patched IDL
+  let program: Program<DrmrStaking>;
+  try {
+    program = new Program(
+      patchedIdl as anchor.Idl,
+      PROGRAM_ID,
+      provider
+    ) as Program<DrmrStaking>;
+    console.log("✅ Program created successfully\n");
+  } catch (error: any) {
+    console.error("❌ Program creation failed:", error.message);
+    throw error;
+  }
 
   // Derive PDAs
   const [stakingPoolPDA] = PublicKey.findProgramAddressSync(
@@ -209,9 +202,15 @@ async function main() {
     console.log(`   Current Max Epoch Cycles: ${existingPool.stakeEpochCycles.toString()}`);
     console.log("\n   If you want to update the pool configuration, use the update_pool_config instruction instead.");
     console.log("   This script will fail if the pool already exists.\n");
-  } catch (err) {
-    // Pool doesn't exist, which is what we want
-    console.log("✓ Pool doesn't exist yet, proceeding with initialization...\n");
+  } catch (err: any) {
+    if (err.message?.includes("Account does not exist") || err.message?.includes("Invalid account")) {
+      console.log("✓ Pool doesn't exist yet, proceeding with initialization...\n");
+    } else if (err.message?.includes("Cannot read properties") || err.message?.includes("size")) {
+      // Account namespace not available, but that's okay
+      console.log("ℹ️  Proceeding with initialization (account fetch unavailable)...\n");
+    } else {
+      console.log("ℹ️  Proceeding with initialization...\n");
+    }
   }
 
   const drmrMint = new PublicKey(drmrMintAddress);
@@ -220,6 +219,7 @@ async function main() {
   console.log("📝 Creating initialization transaction...");
 
   try {
+    // Use Anchor's instruction builder - it should work with the patched IDL
     const tx = await program.methods
       .initialize(apyBps, new BN(maxStakeEpochCycles))
       .accounts({

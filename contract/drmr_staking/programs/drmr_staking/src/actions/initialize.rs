@@ -12,13 +12,7 @@ pub fn initialize(
     let clock = Clock::get()?;
     let current_time = clock.unix_timestamp;
     
-    // Derive the trusted admin PDA address
-    // All pools will have this trusted admin as their admin
-    //@NOTE this admin address will be a hardcoded normal solana address
-    // let (trusted_admin_pda, _bump) = Pubkey::find_program_address(
-    //     &[b"trusted_admin"],
-    //     ctx.program_id,
-    // );
+    
     let trusted_admin = Pubkey::from_str_const("9ptLw6PHCEhaJw5kEjpQ6eTDwsPoqLM3E64gtzo2Fe8");
     // Set the trusted admin PDA as the pool admin (not the creator)
     // The creator pays for pool creation but doesn't become admin
@@ -59,7 +53,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = creator,
-        space = StakingPool::INIT_SPACE,
+        space = 8 + StakingPool::INIT_SPACE,
         seeds = [b"staking_pool"],
         bump
     )]
@@ -67,7 +61,7 @@ pub struct Initialize<'info> {
     
     /// Stake vault: PDA-owned token account to hold staked tokens
     #[account(
-        init,
+        init_if_needed,
         payer = creator,
         token::mint = drmr_mint,
         token::authority = staking_pool,
@@ -78,7 +72,7 @@ pub struct Initialize<'info> {
     
     /// Reward vault: PDA-owned token account to hold reward tokens
     #[account(
-        init,
+        init_if_needed,
         payer = creator,
         token::mint = drmr_mint,
         token::authority = staking_pool,

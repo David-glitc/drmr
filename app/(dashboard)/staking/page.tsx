@@ -91,6 +91,10 @@ export default function StakingPage() {
     refetchInterval: 30000,
   });
 
+  const [stakeAmount, setStakeAmount] = useState("");
+  const [selectedValidator, setSelectedValidator] = useState<string>("");
+  const [tokenType, setTokenType] = useState<"SOL" | "DRMR">("SOL");
+  
   // Automatic get_reward execution every 15 minutes (900000ms)
   useEffect(() => {
     if (!walletAddress || !DRMR_MINT || !stakerData || tokenType !== "DRMR") return;
@@ -133,10 +137,6 @@ export default function StakingPage() {
 
     return () => clearInterval(interval);
   }, [walletAddress, DRMR_MINT, stakerData, stakingPool, tokenType, claimReward, fetchStaker]);
-  
-  const [stakeAmount, setStakeAmount] = useState("");
-  const [selectedValidator, setSelectedValidator] = useState<string>("");
-  const [tokenType, setTokenType] = useState<"SOL" | "DRMR">("SOL");
   // added by totding
   const [stakePeriods, setStakePeriods] = useState<number>(1); // Default to 1 epoch cycle for DRMR
   const [isStakeModalOpen, setIsStakeModalOpen] = useState(false);
@@ -710,10 +710,32 @@ export default function StakingPage() {
                         throw new Error("DRMR mint address not configured");
                       }
                       
+                      // Check if pool exists and is active
+                      if (!stakingPool) {
+                        throw new Error("Staking pool is not initialized. Please wait for the admin to initialize the pool.");
+                      }
+                      
+                      if (!stakingPool.isActive) {
+                        throw new Error("Staking pool is currently inactive. Please contact the admin.");
+                      }
+                      
+                      // Validate stake periods
+                      const maxPeriods = Number(stakingPool.stakeEpochCycles);
+                      if (stakePeriods > maxPeriods) {
+                        throw new Error(`Invalid stake period. Maximum allowed: ${maxPeriods} cycles`);
+                      }
+                      
+                      // Validate DRMR mint matches pool
+                      if (stakingPool.drmrMint.toBase58() !== DRMR_MINT) {
+                        throw new Error(`DRMR mint address mismatch. Pool expects: ${stakingPool.drmrMint.toBase58()}`);
+                      }
+                      
                       console.log(`[DRMR Staking] Starting stake process...`);
                       console.log(`[DRMR Staking] Amount: ${amount} DRMR`);
                       console.log(`[DRMR Staking] Stake Periods: ${stakePeriods}`);
                       console.log(`[DRMR Staking] Wallet: ${walletAddress}`);
+                      console.log(`[DRMR Staking] Pool Active: ${stakingPool.isActive}`);
+                      console.log(`[DRMR Staking] Pool Mint: ${stakingPool.drmrMint.toBase58()}`);
                       
                       const tx = await stakeDrmr(amount, stakePeriods, DRMR_MINT);
                       console.log(`[DRMR Staking] ✓ Transaction: ${tx}`);
@@ -914,7 +936,8 @@ export default function StakingPage() {
                   <PieChart>
                     <Tooltip
                         contentStyle={{ background: "#111118", border: "1px solid rgba(255,255,255,0.1)" }}
-                      labelStyle={{ color: "#e2e8f0" }}
+                      labelStyle={{ color: "#ffffff" }}
+                      itemStyle={{ color: "#ffffff" }}
                     />
                     <Pie
                       data={
@@ -934,7 +957,7 @@ export default function StakingPage() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-                <div className="flex-1 space-y-2 text-sm text-white/70">
+                <div className="flex-1 space-y-2 text-sm">
                 {(allocation.length
                   ? allocation
                   : fallbackAllocation.map(({ label, value }) => ({
@@ -943,7 +966,9 @@ export default function StakingPage() {
                     }))
                 ).map((slice) => (
                   <div key={slice.label} className="flex justify-between">
-                    <span>{slice.label}</span>
+                    <span className={slice.label === "DRMR Stakers" ? "text-white" : "text-white/70"}>
+                      {slice.label}
+                    </span>
                     <span className="text-white">{slice.percent}%</span>
                   </div>
                 ))}

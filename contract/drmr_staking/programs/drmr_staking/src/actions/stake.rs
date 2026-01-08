@@ -129,7 +129,7 @@ pub struct Stake<'info> {
     #[account(
         init_if_needed,
         payer = user,
-        space = Staker::INIT_SPACE,
+        space = 8 + Staker::INIT_SPACE,
         seeds = [b"staker", staking_pool.key().as_ref(), user.key().as_ref()],
         bump
     )]

@@ -1,117 +1,128 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface AdminPasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onVerifyPassword: (password: string) => Promise<boolean>;
 }
 
-export function AdminPasswordModal({ isOpen, onClose, onSuccess }: AdminPasswordModalProps) {
+export function AdminPasswordModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  onVerifyPassword,
+}: AdminPasswordModalProps) {
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setPassword("");
-      setError(null);
+      setError("");
+      // Focus input when modal opens
+      setTimeout(() => inputRef.current?.focus(), 100);
+      
+      // Debug: Validate onVerifyPassword when modal opens
+      console.log("[AdminPasswordModal] Modal opened, checking onVerifyPassword:", {
+        exists: !!onVerifyPassword,
+        type: typeof onVerifyPassword,
+        isFunction: typeof onVerifyPassword === 'function',
+        constructor: onVerifyPassword?.constructor?.name,
+        keys: onVerifyPassword && typeof onVerifyPassword === 'object' ? Object.keys(onVerifyPassword) : 'N/A',
+        value: onVerifyPassword
+      });
+      if (!onVerifyPassword || typeof onVerifyPassword !== 'function') {
+        console.error("[AdminPasswordModal] onVerifyPassword is invalid!");
+        setError("Password verification function is not available. Please refresh the page.");
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, onVerifyPassword]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setIsLoading(true);
+    setIsVerifying(true);
+    setError("");
 
     try {
-      const response = await fetch("/api/admin/verify-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        // Store admin auth state in localStorage
-        localStorage.setItem("admin_authenticated", "true");
-        localStorage.setItem("admin_auth_timestamp", Date.now().toString());
-        onSuccess();
-        onClose();
-        setPassword("");
-      } else {
-        setError(data.error || "Invalid password");
+      if (!onVerifyPassword || typeof onVerifyPassword !== 'function') {
+        throw new Error("Password verification function is not available");
       }
-    } catch (error) {
-      console.error("Password verification error:", error);
-      setError("Failed to verify password. Please try again.");
+      const isValid = await onVerifyPassword(password);
+      if (isValid) {
+        setError("");
+        onSuccess();
+        setPassword("");
+        onClose();
+      } else {
+        setError("Incorrect password");
+        setPassword("");
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to verify password. Please try again.";
+      
+      // Check for specific error messages
+      if (errorMessage.includes("Admin authentication is not configured")) {
+        setError("Admin password is not configured. Please set ADMIN_PASSWORD in your .env.local file.");
+      } else if (errorMessage.includes("HTTP 500")) {
+        setError("Server error. Please check if ADMIN_PASSWORD is set in your environment variables.");
+      } else if (errorMessage.includes("HTTP 401")) {
+        setError("Incorrect password");
+      } else {
+        setError(errorMessage || "Failed to verify password. Please try again.");
+      }
+      setPassword("");
     } finally {
-      setIsLoading(false);
+      setIsVerifying(false);
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#111118] p-6 shadow-xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">Admin Access</h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white transition"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
+        <h2 className="text-xl font-semibold text-white mb-4">Admin Access</h2>
+        <p className="text-sm text-white/70 mb-4">Enter the admin password to access the admin panel.</p>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-white/70 mb-2">
-              Enter Admin Password
-            </label>
+            <label className="text-sm text-white/70 mb-2 block">Password</label>
             <input
-              id="password"
+              ref={inputRef}
               type="password"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                setError(null);
+                setError("");
               }}
-              placeholder="Password"
+              className="w-full rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
+              placeholder="Enter password"
               autoFocus
-              disabled={isLoading}
-              className="w-full rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-white placeholder:text-white/40 outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             />
+            {error && (
+              <p className="text-xs text-red-400 mt-2">{error}</p>
+            )}
           </div>
-
-          {error && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3">
-              <p className="text-sm text-red-400">{error}</p>
-            </div>
-          )}
 
           <div className="flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              disabled={isLoading}
-              className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isLoading || !password}
-              className="flex-1 rounded-xl border border-blue-500/50 bg-blue-500/10 px-4 py-3 text-sm font-semibold text-blue-400 transition hover:bg-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isVerifying}
+              className="flex-1 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Verifying..." : "Verify"}
+              {isVerifying ? "Verifying..." : "Access"}
             </button>
           </div>
         </form>

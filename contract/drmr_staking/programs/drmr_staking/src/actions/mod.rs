@@ -18,3 +18,6 @@ pub use update_config::*;
 
 pub mod withdraw;
 pub use withdraw::*;
+
+pub mod close_token;
+pub use close_token::*;
