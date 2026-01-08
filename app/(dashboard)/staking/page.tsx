@@ -11,7 +11,6 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-// Added this 
 import { useQuery } from "@tanstack/react-query";
 
 import { useAnalytics } from "../../../hooks/useAnalytics";
