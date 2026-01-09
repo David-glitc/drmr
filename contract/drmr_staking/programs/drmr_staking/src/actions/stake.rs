@@ -48,9 +48,11 @@ pub fn stake(
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
     token::transfer(cpi_ctx, stake_amount)?;
 
-    // Check if this is the first stake (no currently active stake)
-    // Note: amount = currently staked, total_token_staked = lifetime cumulative total
-    let is_first_stake = staker.amount == 0;
+    // Check if this is the first stake (account was just created or never staked before)
+    // Note: amount = currently staked (can be 0 if user unstaked everything)
+    //       total_token_staked = lifetime cumulative total (never decreases, only increases)
+    // We use total_token_staked because it's 0 only for new accounts, never for existing ones
+    let is_first_stake = staker.total_token_staked == 0;
 
     if is_first_stake {
         // First stake: Initialize all fields

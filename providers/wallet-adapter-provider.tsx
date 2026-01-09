@@ -93,32 +93,32 @@ function InnerProvider({ children }: { children: ReactNode }) {
     return publicEndpoint;
   }, [network]);
   
+  // Create stable wallet adapters outside of useMemo to prevent recreation
   const wallets = useMemo(() => {
-    // Create wallet adapters - only Solana wallets (not MetaMask/EVM wallets)
-    const walletAdapters = [
+    // Only include Solana-native wallets (not MetaMask/EVM wallets)
+    // The order matters - Phantom first as it's most common for Solana
+    return [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
     ];
-    
-    // Ensure each wallet has a unique, stable identity
-    // Filter out any duplicates by name to prevent React key warnings
-    const seen = new Set<string>();
-    const uniqueWallets = walletAdapters.filter((wallet) => {
-      const name = wallet.name || wallet.constructor.name;
-      if (seen.has(name)) {
-        return false;
-      }
-      seen.add(name);
-      return true;
-    });
-    
-    return uniqueWallets;
+  }, []);
+
+  // Error handler for wallet connection issues
+  const onError = useMemo(() => (error: Error) => {
+    // Suppress specific errors that don't affect functionality
+    if (error.message?.includes('MetaMask') || 
+        error.message?.includes('duplicate') ||
+        error.message?.includes('same key')) {
+      console.warn('[WalletProvider] Suppressed wallet error:', error.message);
+      return;
+    }
+    console.error('[WalletProvider] Wallet error:', error);
   }, []);
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider key="wallet-modal-provider">
+      <WalletProvider wallets={wallets} autoConnect onError={onError}>
+        <WalletModalProvider>
           <NetworkInitializer />
           <NetworkSync />
           {children}

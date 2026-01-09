@@ -16,20 +16,22 @@ export function useConnectionReady() {
 
   useEffect(() => {
     let mounted = true;
-    let maxTimeoutId: NodeJS.Timeout;
-    let connectionCheckId: NodeJS.Timeout;
+    let maxTimeoutId: NodeJS.Timeout | undefined;
+    let connectionCheckId: NodeJS.Timeout | undefined;
+    let isResolved = false; // Prevent multiple state updates
 
     // Set a maximum timeout FIRST to ensure we never wait forever
     maxTimeoutId = setTimeout(() => {
-      if (mounted) {
+      if (mounted && !isResolved) {
+        isResolved = true;
         console.warn("[useConnectionReady] Max timeout (2s) reached, marking as ready");
         setIsReady(true);
         setIsChecking(false);
       }
-    }, 2000); // Reduced to 2 seconds max
+    }, 2000);
 
     const checkConnection = async () => {
-      if (!mounted) return;
+      if (!mounted || isResolved) return;
 
       try {
         setIsChecking(true);
@@ -37,12 +39,13 @@ export function useConnectionReady() {
         // Try to get connection version with a very short timeout
         // If this fails, we'll just mark as ready anyway
         connectionCheckId = setTimeout(() => {
-          if (mounted) {
+          if (mounted && !isResolved) {
+            isResolved = true;
             console.warn("[useConnectionReady] Connection check timeout, marking as ready");
             setIsReady(true);
             setIsChecking(false);
           }
-        }, 1500); // Fail after 1.5 seconds
+        }, 1500);
 
         try {
           await Promise.race([
@@ -55,9 +58,11 @@ export function useConnectionReady() {
           // Clear the timeout since we succeeded
           if (connectionCheckId) {
             clearTimeout(connectionCheckId);
+            connectionCheckId = undefined;
           }
           
-          if (mounted) {
+          if (mounted && !isResolved) {
+            isResolved = true;
             setIsReady(true);
             setIsChecking(false);
           }
@@ -65,10 +70,12 @@ export function useConnectionReady() {
           // Clear the timeout
           if (connectionCheckId) {
             clearTimeout(connectionCheckId);
+            connectionCheckId = undefined;
           }
           console.warn("[useConnectionReady] Connection check failed, marking as ready:", error);
           // Mark as ready immediately if connection check fails
-          if (mounted) {
+          if (mounted && !isResolved) {
+            isResolved = true;
             setIsReady(true);
             setIsChecking(false);
           }
@@ -77,10 +84,12 @@ export function useConnectionReady() {
         // Clear the timeout
         if (connectionCheckId) {
           clearTimeout(connectionCheckId);
+          connectionCheckId = undefined;
         }
         console.warn("[useConnectionReady] Connection check error, marking as ready:", error);
         // Mark as ready immediately on error
-        if (mounted) {
+        if (mounted && !isResolved) {
+          isResolved = true;
           setIsReady(true);
           setIsChecking(false);
         }
@@ -92,6 +101,7 @@ export function useConnectionReady() {
 
     return () => {
       mounted = false;
+      isResolved = true; // Prevent any pending timeouts from updating state
       if (maxTimeoutId) {
         clearTimeout(maxTimeoutId);
       }

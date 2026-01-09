@@ -4,7 +4,8 @@
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "create-token": "ts-node scripts/create-token-mint.ts",
-    "add-metadata": "ts-node scripts/add-token-metadata.ts"
+    "add-metadata": "ts-node scripts/add-token-metadata.ts",
+    "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",

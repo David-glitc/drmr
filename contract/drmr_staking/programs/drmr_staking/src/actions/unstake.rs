@@ -8,8 +8,7 @@ pub fn unstake(ctx: Context<Unstake>, unstake_amount: u64) -> Result<()> {
     let clock = Clock::get()?;
     let current_time = clock.unix_timestamp;
 
-    // Get account info and key before mutable borrows
-    let pool_key = ctx.accounts.staking_pool.key();
+    // Get account info before mutable borrows
     let staking_pool_account_info = ctx.accounts.staking_pool.to_account_info();
     let staked_amount = ctx.accounts.staker.amount;
 
@@ -40,13 +39,12 @@ pub fn unstake(ctx: Context<Unstake>, unstake_amount: u64) -> Result<()> {
     let staker = &mut ctx.accounts.staker;
 
     // Transfer tokens from stake vault to user
-    // stake_vault is PDA-owned by staking_pool, so we need signer seeds
-    let stake_vault_seeds = &[
-        b"stake_vault".as_ref(),
-        pool_key.as_ref(),
-        &[ctx.bumps.stake_vault],
+    // stake_vault is owned by staking_pool PDA, so we need to sign with staking_pool seeds
+    let staking_pool_seeds: &[&[u8]] = &[
+        b"staking_pool",
+        &[ctx.bumps.staking_pool],
     ];
-    let stake_vault_signer = &[&stake_vault_seeds[..]];
+    let staking_pool_signer = &[staking_pool_seeds];
 
     let cpi_accounts = Transfer {
         from: ctx.accounts.stake_vault.to_account_info(),
@@ -54,7 +52,7 @@ pub fn unstake(ctx: Context<Unstake>, unstake_amount: u64) -> Result<()> {
         authority: staking_pool_account_info,
     };
     let cpi_program = ctx.accounts.token_program.to_account_info();
-    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, stake_vault_signer);
+    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, staking_pool_signer);
     token::transfer(cpi_ctx, unstake_amount)?;
 
     // Update staker: Decreases by number of tokens removed from the pool

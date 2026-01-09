@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use crate::config::{StakingPool, Staker};
 use crate::error::StakingError;
-use crate::global::{BASIS_POINTS, PRECISION};
+use crate::global::BASIS_POINTS;
 
 /// Reward calculation interval: 5 minutes in seconds
 const REWARD_INTERVAL_SECONDS: u64 = 300; // 5 minutes
@@ -10,36 +10,31 @@ const REWARD_INTERVAL_SECONDS: u64 = 300; // 5 minutes
 const SECONDS_PER_YEAR: u64 = 31_557_600;
 
 /// Helper function to calculate rewards based on staked amount, APY, and time elapsed
-/// Calculates rewards using high precision to avoid rounding errors
+/// Uses u128 for intermediate calculations to avoid overflow with large token amounts
 /// 
-/// Formula: reward = (staked_amount * apy_bps * time_elapsed_seconds * PRECISION) / (BASIS_POINTS * seconds_per_year)
+/// Formula: reward = (staked_amount * apy_bps * time_elapsed_seconds) / (BASIS_POINTS * seconds_per_year)
 /// 
-/// Example calculation:
-/// - staked_amount = 4000 tokens
+/// Example calculation (with 9 decimal token):
+/// - staked_amount = 4000 tokens = 4,000,000,000,000 (4e12 with 9 decimals)
 /// - apy_bps = 4000 (40% APY, since BASIS_POINTS = 10000 = 100%)
 /// - time_elapsed_seconds = 86400 (24 hours)
 /// 
-/// Step-by-step:
-/// 1. numerator = 4000 * 4000 * 86400 * 1_000_000_000 
-///             = 1,382,400,000,000,000,000,000
-/// 2. denominator = 10_000 * 31_557_600 
-///                = 315,576,000,000
-/// 3. reward_with_precision = 1,382,400,000,000,000,000,000 / 315,576,000,000 
-///                          = 4,380,561,259
-/// 4. reward = 4,380,561,259 / 1_000_000_000 
-///          = 4.380561259 tokens (with integer division: 4 tokens)
-/// 5. Final result (u64): 4 tokens (rounded down)
+/// Step-by-step (using u128):
+/// 1. numerator = 4,000,000,000,000 * 4000 * 86400 = 1,382,400,000,000,000,000,000 (1.38e21)
+/// 2. denominator = 10,000 * 31,557,600 = 315,576,000,000
+/// 3. reward = 1,382,400,000,000,000,000,000 / 315,576,000,000 = 4,380,561,643,835
+/// 4. Final result: ~4.38 tokens (with 9 decimals)
 /// 
 /// Verification: 4000 tokens at 40% APY for 1 year = 1600 tokens
 /// For 24 hours: 1600 * (86400 / 31,557,600) ≈ 4.38 tokens ✓
 /// 
 /// # Arguments
-/// * `staked_amount` - Amount currently staked
+/// * `staked_amount` - Amount currently staked (includes token decimals)
 /// * `apy_bps` - APY in basis points (BASIS_POINTS = 10000 = 100%)
 /// * `time_elapsed_seconds` - Time elapsed since last claim in seconds
 /// 
 /// # Returns
-/// Calculated reward amount, or error on overflow
+/// Calculated reward amount (with same decimals as input), or error on overflow
 fn calculate_reward(
     staked_amount: u64,
     apy_bps: u16,
@@ -50,35 +45,40 @@ fn calculate_reward(
         return Ok(0);
     }
 
-    // Calculate rewards with high precision to avoid rounding errors
-    // Formula: (staked_amount * apy_bps * time_elapsed * PRECISION) / (BASIS_POINTS * seconds_per_year)
-    let apy_bps_u64 = apy_bps as u64;
+    // Calculate rewards with high precision using u128 to avoid overflow
+    // Formula: (staked_amount * apy_bps * time_elapsed_seconds) / (BASIS_POINTS * seconds_per_year)
+    // 
+    // Using u128 because with SPL tokens (9 decimals):
+    // - staked_amount can be ~10^18 (billions of tokens with decimals)
+    // - multiplied by apy_bps (~10^4) and time (~10^7 for a year)
+    // - this exceeds u64 max (~1.8e19)
     
-    // Numerator: staked_amount * apy_bps * time_elapsed_seconds * PRECISION
-    // This maintains precision during division
-    let numerator = staked_amount
-        .checked_mul(apy_bps_u64)
+    let staked_amount_u128 = staked_amount as u128;
+    let apy_bps_u128 = apy_bps as u128;
+    let time_elapsed_u128 = time_elapsed_seconds as u128;
+    let basis_points_u128 = BASIS_POINTS as u128;
+    let seconds_per_year_u128 = SECONDS_PER_YEAR as u128;
+    
+    // Numerator: staked_amount * apy_bps * time_elapsed_seconds
+    let numerator = staked_amount_u128
+        .checked_mul(apy_bps_u128)
         .ok_or(StakingError::MathOverflow)?
-        .checked_mul(time_elapsed_seconds)
-        .ok_or(StakingError::MathOverflow)?
-        .checked_mul(PRECISION)
+        .checked_mul(time_elapsed_u128)
         .ok_or(StakingError::MathOverflow)?;
 
     // Denominator: BASIS_POINTS * seconds_per_year
-    let denominator = BASIS_POINTS
-        .checked_mul(SECONDS_PER_YEAR)
+    let denominator = basis_points_u128
+        .checked_mul(seconds_per_year_u128)
         .ok_or(StakingError::MathOverflow)?;
 
-    // Calculate reward with precision: numerator / denominator
-    // This gives us reward * PRECISION
-    let reward_with_precision = numerator
+    // Calculate reward: numerator / denominator
+    let reward_u128 = numerator
         .checked_div(denominator)
         .ok_or(StakingError::MathOverflow)?;
 
-    // Divide by PRECISION to get final reward amount
-    let reward = reward_with_precision
-        .checked_div(PRECISION)
-        .ok_or(StakingError::MathOverflow)?;
+    // Convert back to u64 (safe because reward should be much smaller than staked amount)
+    let reward = u64::try_from(reward_u128)
+        .map_err(|_| StakingError::MathOverflow)?;
 
     Ok(reward)
 }
@@ -115,7 +115,6 @@ pub fn get_reward(ctx: Context<GetReward>) -> Result<()> {
     require!(reward_amount > 0, StakingError::NoRewardsAvailable);
 
     // Get account info before mutable borrows
-    let pool_key = pool.key();
     let staking_pool_account_info = ctx.accounts.staking_pool.to_account_info();
 
     // Check if stake_vault has sufficient balance to cover rewards
@@ -125,13 +124,12 @@ pub fn get_reward(ctx: Context<GetReward>) -> Result<()> {
     );
 
     // Transfer rewards from stake_vault to reward_vault
-    // Both vaults are PDA-owned by staking_pool, so we need signer seeds for stake_vault
-    let stake_vault_seeds = &[
-        b"stake_vault",
-        pool_key.as_ref(),
-        &[ctx.bumps.stake_vault],
+    // Both vaults are owned by staking_pool PDA, so we need to sign with staking_pool seeds
+    let staking_pool_seeds: &[&[u8]] = &[
+        b"staking_pool",
+        &[ctx.bumps.staking_pool],
     ];
-    let stake_vault_signer = &[&stake_vault_seeds[..]];
+    let staking_pool_signer = &[staking_pool_seeds];
 
     let cpi_accounts = Transfer {
         from: ctx.accounts.stake_vault.to_account_info(),
@@ -139,7 +137,7 @@ pub fn get_reward(ctx: Context<GetReward>) -> Result<()> {
         authority: staking_pool_account_info,
     };
     let cpi_program = ctx.accounts.token_program.to_account_info();
-    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, stake_vault_signer);
+    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, staking_pool_signer);
     token::transfer(cpi_ctx, reward_amount)?;
 
     // update the total rewards claimed

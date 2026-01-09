@@ -16,35 +16,16 @@ export function usePortfolio() {
   const { connection } = useConnection();
   const { data: solPrice } = useSolPrice();
 
-  console.log("[usePortfolio] Hook state:", {
-    walletStatus,
-    walletAddress,
-    network,
-    hasConnection: !!connection,
-    solPrice,
-  });
-
   const query = useQuery({
     queryKey: ["portfolio", walletAddress, walletStatus, solPrice, network],
     queryFn: () => {
-      console.log("[usePortfolio] Fetching portfolio data for network:", network);
       return portfolioService.fetchPortfolio(walletAddress, connection, solPrice, network);
     },
     enabled: walletStatus === "connected" && Boolean(walletAddress) && Boolean(connection),
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  // Handle success and error with useEffect (React Query v4+ pattern)
-  useEffect(() => {
-    if (query.data) {
-      console.log("[usePortfolio] Portfolio data received:", {
-        tokenCount: query.data.tokens.length,
-        nftCount: query.data.nfts.length,
-        activityCount: query.data.activity.length,
-      });
-    }
-  }, [query.data]);
-
+  // Log errors only (not success, to reduce console noise)
   useEffect(() => {
     if (query.error) {
       console.error("[usePortfolio] Error fetching portfolio:", query.error);

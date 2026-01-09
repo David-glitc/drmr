@@ -64,6 +64,36 @@ export default function StakingAdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>("monitoring");
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [passwordVerified, setPasswordVerified] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  
+  // Form state for initialize pool
+  const [initDrmrMint, setInitDrmrMint] = useState("");
+  const [initApyBps, setInitApyBps] = useState("");
+  const [initMaxStakeEpochCycles, setInitMaxStakeEpochCycles] = useState("");
+  
+  // Form state for manage pool
+  const [newAdmin, setNewAdmin] = useState("");
+  const [newStakeEpochCycles, setNewStakeEpochCycles] = useState("");
+  const [newRewardCycleSeconds, setNewRewardCycleSeconds] = useState("");
+  const [newApyBps, setNewApyBps] = useState("");
+  const [newIsActive, setNewIsActive] = useState<boolean | null>(true);
+
+  // Fetch staking pool data
+  const { data: stakingPool } = useQuery({
+    queryKey: ["staking-pool"],
+    queryFn: fetchStakingPool,
+    refetchInterval: 30000,
+  });
+
+  // Fetch all stakers
+  const { data: allStakers, isLoading: isLoadingStakers } = useQuery({
+    queryKey: ["all-stakers"],
+    queryFn: fetchAllStakers,
+    enabled: passwordVerified && !!stakingPool,
+    refetchInterval: 30000,
+  });
 
   // Define verifyPassword function directly - always available as a function
   const verifyPassword = useCallback(async (password: string): Promise<boolean> => {
@@ -97,6 +127,11 @@ export default function StakingAdminPage() {
       console.error("[verifyPassword] Error verifying password:", error);
       throw error; // Re-throw to let the modal handle the error message
     }
+  }, []);
+
+  const handlePasswordSuccess = useCallback(() => {
+    setPasswordVerified(true);
+    setPasswordModalOpen(false);
   }, []);
 
   const handleInitialize = async () => {
@@ -182,7 +217,7 @@ export default function StakingAdminPage() {
       setNewStakeEpochCycles("");
       setNewRewardCycleSeconds("");
       setNewApyBps("");
-      setNewIsActive(null);
+      setNewIsActive(true);
       
       fetchStakingPool();
     } catch (err: any) {
@@ -400,6 +435,7 @@ export default function StakingAdminPage() {
                       <th className="text-left py-3 px-4 text-white/70 font-medium">Wallet</th>
                       <th className="text-right py-3 px-4 text-white/70 font-medium">Staked Amount</th>
                       <th className="text-right py-3 px-4 text-white/70 font-medium">Available Rewards</th>
+                      <th className="text-right py-3 px-4 text-white/70 font-medium">Accrued Rewards</th>
                       <th className="text-right py-3 px-4 text-white/70 font-medium">Total Rewards Claimed</th>
                       <th className="text-right py-3 px-4 text-white/70 font-medium">Stake Periods</th>
                       <th className="text-right py-3 px-4 text-white/70 font-medium">Staked At</th>
@@ -407,31 +443,73 @@ export default function StakingAdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {allStakers.map((staker) => (
-                      <tr key={staker.publicKey.toBase58()} className="border-b border-white/5">
-                        <td className="py-3 px-4 text-white font-mono text-xs">
-                          {staker.user.toBase58().slice(0, 8)}...{staker.user.toBase58().slice(-8)}
-                        </td>
-                        <td className="py-3 px-4 text-white text-right">
-                          {(Number(staker.amount) / 1e9).toFixed(2)} DRMR
-                        </td>
-                        <td className="py-3 px-4 text-white text-right">
-                          {(Number(staker.availableRewards) / 1e9).toFixed(2)} DRMR
-                        </td>
-                        <td className="py-3 px-4 text-white text-right">
-                          {(Number(staker.totalRewardsClaimed) / 1e9).toFixed(2)} DRMR
-                        </td>
-                        <td className="py-3 px-4 text-white text-right">
-                          {staker.stakePeriods}
-                        </td>
-                        <td className="py-3 px-4 text-white text-right text-xs">
-                          {new Date(Number(staker.stakedAt) * 1000).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 px-4 text-white text-right text-xs">
-                          {new Date(Number(staker.stakeEndTime) * 1000).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
+                    {allStakers.map((staker) => {
+                      // Calculate accrued rewards (rewards that have accrued since last claim but haven't been calculated via get_reward)
+                      const calculateAccruedRewards = () => {
+                        if (!stakingPool || Number(staker.amount) === 0) return 0;
+                        
+                        const now = Math.floor(Date.now() / 1000);
+                        const lastClaim = Number(staker.lastClaim);
+                        const timeElapsedSeconds = Math.max(0, now - lastClaim);
+                        
+                        // Minimum 5 minutes (300 seconds) required for rewards (same as contract)
+                        if (timeElapsedSeconds < 300) return 0;
+                        
+                        // Use same calculation as contract: (staked_amount * apy_bps * time_elapsed * PRECISION) / (BASIS_POINTS * seconds_per_year)
+                        const BASIS_POINTS = 10000;
+                        const PRECISION = 1_000_000_000;
+                        const SECONDS_PER_YEAR = 31_557_600;
+                        
+                        const stakedAmount = Number(staker.amount);
+                        const apyBps = stakingPool.apyBps;
+                        
+                        // Calculate with high precision to avoid rounding errors
+                        const numerator = stakedAmount * apyBps * timeElapsedSeconds * PRECISION;
+                        const denominator = BASIS_POINTS * SECONDS_PER_YEAR;
+                        const rewardWithPrecision = Math.floor(numerator / denominator);
+                        const reward = Math.floor(rewardWithPrecision / PRECISION);
+                        
+                        return reward;
+                      };
+                      
+                      const accruedRewards = calculateAccruedRewards();
+                      const availableRewards = Number(staker.availableRewards);
+                      const totalAvailable = availableRewards + accruedRewards;
+                      
+                      return (
+                        <tr key={staker.publicKey.toBase58()} className="border-b border-white/5">
+                          <td className="py-3 px-4 text-white font-mono text-xs">
+                            {staker.user.toBase58().slice(0, 8)}...{staker.user.toBase58().slice(-8)}
+                          </td>
+                          <td className="py-3 px-4 text-white text-right">
+                            {(Number(staker.amount) / 1e9).toFixed(2)} DRMR
+                          </td>
+                          <td className="py-3 px-4 text-white text-right">
+                            {(availableRewards / 1e9).toFixed(2)} DRMR
+                          </td>
+                          <td className="py-3 px-4 text-white text-right">
+                            <span className={accruedRewards > 0 ? "text-yellow-400" : ""}>
+                              {(accruedRewards / 1e9).toFixed(2)} DRMR
+                            </span>
+                            {accruedRewards > 0 && (
+                              <span className="text-xs text-white/50 ml-1">(pending)</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-white text-right">
+                            {(Number(staker.totalRewardsClaimed) / 1e9).toFixed(2)} DRMR
+                          </td>
+                          <td className="py-3 px-4 text-white text-right">
+                            {staker.stakePeriods}
+                          </td>
+                          <td className="py-3 px-4 text-white text-right text-xs">
+                            {new Date(Number(staker.stakedAt) * 1000).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 px-4 text-white text-right text-xs">
+                            {new Date(Number(staker.stakeEndTime) * 1000).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

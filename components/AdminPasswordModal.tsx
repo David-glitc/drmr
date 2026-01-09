@@ -26,22 +26,8 @@ export function AdminPasswordModal({
       setError("");
       // Focus input when modal opens
       setTimeout(() => inputRef.current?.focus(), 100);
-      
-      // Debug: Validate onVerifyPassword when modal opens
-      console.log("[AdminPasswordModal] Modal opened, checking onVerifyPassword:", {
-        exists: !!onVerifyPassword,
-        type: typeof onVerifyPassword,
-        isFunction: typeof onVerifyPassword === 'function',
-        constructor: onVerifyPassword?.constructor?.name,
-        keys: onVerifyPassword && typeof onVerifyPassword === 'object' ? Object.keys(onVerifyPassword) : 'N/A',
-        value: onVerifyPassword
-      });
-      if (!onVerifyPassword || typeof onVerifyPassword !== 'function') {
-        console.error("[AdminPasswordModal] onVerifyPassword is invalid!");
-        setError("Password verification function is not available. Please refresh the page.");
-      }
     }
-  }, [isOpen, onVerifyPassword]);
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

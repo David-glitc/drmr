@@ -52,17 +52,7 @@ export default function StakingPage() {
   const { createStakingRecord, isCreating: isCreatingStake } = useStakingRecords();
   const { createAndDelegateStake, getStakeBalance, isReady: isStakingReady } = useSolanaStaking();
 
-  // My addition from the contract
-  const DRMR_MINT = process.env.NEXT_PUBLIC_DRMR_MINT || ""; // Add to .env.local
-  
-  // Debug: Log DRMR_MINT to verify it's being read (remove in production)
-  useEffect(() => {
-    if (DRMR_MINT) {
-      console.log("[DRMR] Mint address loaded:", DRMR_MINT);
-    } else {
-      console.warn("[DRMR] Mint address not found in environment variables");
-    }
-  }, [DRMR_MINT]);
+  const DRMR_MINT = process.env.NEXT_PUBLIC_DRMR_MINT || "";
   
   const { data: drmrBalance } = useDrmrToken(DRMR_MINT);
   const {
@@ -94,7 +84,7 @@ export default function StakingPage() {
   const [selectedValidator, setSelectedValidator] = useState<string>("");
   const [tokenType, setTokenType] = useState<"SOL" | "DRMR">("SOL");
   
-  // Automatic get_reward execution every 15 minutes (900000ms)
+  // Automatic get_reward execution every 15 minutes
   useEffect(() => {
     if (!walletAddress || !DRMR_MINT || !stakerData || tokenType !== "DRMR") return;
 
@@ -102,41 +92,66 @@ export default function StakingPage() {
     const hasStaked = Number(stakerData.amount) > 0;
     if (!hasStaked) return;
 
-    const interval = setInterval(async () => {
-      try {
-        console.log("[Auto Claim] Automatically claiming rewards...");
-        await claimReward(DRMR_MINT);
-        console.log("[Auto Claim] Rewards claimed successfully");
-        // Refetch staker data after claiming
-        fetchStaker();
-      } catch (error) {
-        console.error("[Auto Claim] Failed to claim rewards:", error);
-        // Don't show error to user for automatic claims
-      }
-    }, 15 * 60 * 1000); // 15 minutes
+    // Check if staking pool is loaded before proceeding
+    if (!stakingPool) return;
+
+    let isMounted = true;
+    let intervalId: NodeJS.Timeout | undefined;
 
     // Also claim immediately if enough time has passed since last claim
     const checkAndClaim = async () => {
+      if (!isMounted) return;
+      
       try {
         const now = Math.floor(Date.now() / 1000);
         const lastClaim = Number(stakerData.lastClaim);
-        const rewardCycleSeconds = stakingPool?.rewardCycleSeconds ? Number(stakingPool.rewardCycleSeconds) : 300; // Default 5 minutes
+        const rewardCycleSeconds = stakingPool.rewardCycleSeconds 
+          ? Number(stakingPool.rewardCycleSeconds) 
+          : 300; // Default 5 minutes
         
         if (now - lastClaim >= rewardCycleSeconds) {
           console.log("[Auto Claim] Claiming rewards (cycle ready)...");
           await claimReward(DRMR_MINT);
-          fetchStaker();
+          if (isMounted) {
+            fetchStaker();
+          }
         }
       } catch (error) {
         console.error("[Auto Claim] Failed to claim rewards:", error);
       }
     };
 
-    checkAndClaim();
+    // Set up interval for periodic claims
+    intervalId = setInterval(async () => {
+      if (!isMounted) return;
+      
+      try {
+        console.log("[Auto Claim] Automatically claiming rewards...");
+        await claimReward(DRMR_MINT);
+        if (isMounted) {
+          console.log("[Auto Claim] Rewards claimed successfully");
+          fetchStaker();
+        }
+      } catch (error) {
+        console.error("[Auto Claim] Failed to claim rewards:", error);
+      }
+    }, 15 * 60 * 1000); // 15 minutes
 
-    return () => clearInterval(interval);
+    // Check and claim immediately after a short delay to ensure pool is ready
+    const immediateCheckTimeout = setTimeout(() => {
+      if (isMounted) {
+        checkAndClaim();
+      }
+    }, 1000);
+
+    return () => {
+      isMounted = false;
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+      clearTimeout(immediateCheckTimeout);
+    };
   }, [walletAddress, DRMR_MINT, stakerData, stakingPool, tokenType, claimReward, fetchStaker]);
-  // added by totding
   const [stakePeriods, setStakePeriods] = useState<number>(1); // Default to 1 epoch cycle for DRMR
   const [isStakeModalOpen, setIsStakeModalOpen] = useState(false);
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
@@ -333,6 +348,8 @@ export default function StakingPage() {
                       const value = e.target.value;
                       if (value === "" || /^\d*\.?\d*$/.test(value)) {
                         setStakeAmount(value);
+                        // Clear any previous staking errors when user enters new amount
+                        if (stakingError) setStakingError(null);
                       }
                     }}
                     placeholder="0"
@@ -510,9 +527,12 @@ export default function StakingPage() {
               )}
 
               {/* Your DRMR Staking Info */}
-              {tokenType === "DRMR" && stakerData && (
+              {tokenType === "DRMR" && stakerData && Number(stakerData.amount) > 0 && (
                 <div className="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
-                  <p className="text-sm font-semibold text-green-400 mb-2">Your Staking</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold text-green-400">Your Staking</p>
+                    <span className="text-xs text-white/50">You can add more anytime ↑</span>
+                  </div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs text-white/70">Staked Amount</span>
                     <span className="text-xs font-semibold text-white">
@@ -521,19 +541,65 @@ export default function StakingPage() {
                   </div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs text-white/70">Available Rewards</span>
-                    <span className="text-xs font-semibold text-white">
+                    <span className="text-xs font-semibold text-green-400">
                       {(Number(stakerData.availableRewards) / 1e9).toFixed(4)} DRMR
                     </span>
                   </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-white/70">Accrued (Pending)</span>
+                    <span className="text-xs font-semibold text-yellow-400">
+                      {stakingPool ? (() => {
+                        const stakedAmount = Number(stakerData.amount);
+                        const apyBps = stakingPool.apyBps;
+                        const lastClaim = Number(stakerData.lastClaim);
+                        const now = Math.floor(Date.now() / 1000);
+                        const timeElapsed = Math.max(0, now - lastClaim);
+                        const secondsPerYear = 31557600;
+                        const accrued = (stakedAmount * apyBps * timeElapsed) / (10000 * secondsPerYear);
+                        return (accrued / 1e9).toFixed(6);
+                      })() : "0.000000"} DRMR
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs text-white/70">Total Rewards Claimed</span>
+                    <span className="text-xs text-white/70">Total Claimed</span>
                     <span className="text-xs font-semibold text-white">
                       {(Number(stakerData.totalRewardsClaimed) / 1e9).toFixed(4)} DRMR
                     </span>
                   </div>
                   
-                  {/* Withdraw and Unstake Buttons */}
+                  {/* Claim, Withdraw, and Unstake Buttons */}
                   <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-green-500/20">
+                    {/* Claim Rewards Button - Moves rewards from stake_vault to reward_vault */}
+                    <button
+                      onClick={async () => {
+                        if (!DRMR_MINT || !walletAddress) return;
+                        try {
+                          setIsStaking(true);
+                          setStakingError(null);
+                          setStakingSuccess(null);
+                          await claimReward(DRMR_MINT);
+                          setStakingSuccess("Rewards claimed to reward vault!");
+                          fetchStaker();
+                          setTimeout(() => setStakingSuccess(null), 3000);
+                        } catch (error: any) {
+                          // Handle specific error cases
+                          const errorMsg = error.message || "Failed to claim rewards";
+                          if (errorMsg.includes("RewardCycleNotReady") || errorMsg.includes("cycle not ready")) {
+                            setStakingError("Rewards not ready yet. Wait at least 5 minutes between claims.");
+                          } else {
+                            setStakingError(errorMsg);
+                          }
+                        } finally {
+                          setIsStaking(false);
+                        }
+                      }}
+                      disabled={isDrmrStakingLoading || isStaking}
+                      className="w-full rounded-xl border border-yellow-500/50 bg-yellow-500/10 px-4 py-2.5 text-sm font-semibold text-yellow-400 transition hover:bg-yellow-500/20 hover:border-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isDrmrStakingLoading || isStaking ? "Claiming..." : "Claim Rewards"}
+                    </button>
+                    
+                    {/* Withdraw Rewards Button - Moves rewards from reward_vault to user's wallet */}
                     {Number(stakerData.availableRewards) > 0 && (
                       <button
                         onClick={async () => {
@@ -543,7 +609,7 @@ export default function StakingPage() {
                             setStakingError(null);
                             setStakingSuccess(null);
                             await withdrawRewards(DRMR_MINT);
-                            setStakingSuccess("Rewards withdrawn successfully!");
+                            setStakingSuccess("Rewards withdrawn to your wallet!");
                             fetchStaker();
                             setTimeout(() => setStakingSuccess(null), 3000);
                           } catch (error: any) {
@@ -555,7 +621,7 @@ export default function StakingPage() {
                         disabled={isDrmrStakingLoading || isStaking}
                         className="w-full rounded-xl border border-green-500/50 bg-green-500/10 px-4 py-2.5 text-sm font-semibold text-green-400 transition hover:bg-green-500/20 hover:border-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {isDrmrStakingLoading || isStaking ? "Withdrawing..." : "Withdraw Rewards"}
+                        {isDrmrStakingLoading || isStaking ? "Withdrawing..." : `Withdraw ${(Number(stakerData.availableRewards) / 1e9).toFixed(4)} DRMR`}
                       </button>
                     )}
                     
@@ -586,10 +652,16 @@ export default function StakingPage() {
                     )}
                   </div>
                   
-                  {/* Auto Claim Info */}
-                  <div className="mt-3 pt-3 border-t border-green-500/10">
-                    <p className="text-xs text-white/50 text-center">
-                      Rewards are automatically claimed every 15 minutes
+                  {/* Reward Flow Info */}
+                  <div className="mt-3 pt-3 border-t border-green-500/10 space-y-1">
+                    <p className="text-xs text-white/40 text-center">
+                      <span className="text-yellow-400/70">Claim</span> moves accrued rewards to Available
+                    </p>
+                    <p className="text-xs text-white/40 text-center">
+                      <span className="text-green-400/70">Withdraw</span> transfers Available to your wallet
+                    </p>
+                    <p className="text-xs text-white/50 text-center mt-2">
+                      Auto-claim runs every 15 minutes
                     </p>
                   </div>
                 </div>

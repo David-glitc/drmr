@@ -274,23 +274,6 @@ export default function PortfolioPage() {
     ? solanaAccount.balanceSol * solPrice
     : 0;
 
-  // Debug logging
-  console.log("[PortfolioPage] Component state:", {
-    isConnected,
-    walletAddress,
-    solanaAccount: solanaAccount ? {
-      balanceSol: solanaAccount.balanceSol,
-      balanceLamports: solanaAccount.balanceLamports,
-      slot: solanaAccount.slot,
-    } : null,
-    solPrice,
-    totalBalance,
-    tokens: tokens.length,
-    nfts: nfts.length,
-    accountLoading,
-    portfolioLoading,
-  });
-
   if (!isConnected) {
     return (
       <>
