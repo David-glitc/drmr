@@ -264,19 +264,18 @@ export function useDrmrStaking() {
     setError(null);
 
     try {
-      const drmrMintPubkey = new PublicKey(drmrMint);
       const [stakingPoolPDA] = deriveStakingPoolPDA();
       const [stakerPDA] = deriveStakerPDA(stakingPoolPDA, wallet);
-      const [stakeVaultPDA] = deriveStakeVaultPDA(stakingPoolPDA);
       const [rewardVaultPDA] = deriveRewardVaultPDA(stakingPoolPDA);
 
+      // Note: get_reward no longer requires stake_vault
+      // Rewards come from the pre-funded reward_vault, not from user stakes
       const tx = await program.methods
         .getReward()
         .accounts({
           stakingPool: stakingPoolPDA,
           staker: stakerPDA,
           user: wallet,
-          stakeVault: stakeVaultPDA,
           rewardVault: rewardVaultPDA,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
@@ -576,6 +575,89 @@ export function useDrmrStaking() {
     }
   }, [program, wallet]);
 
+  // Fund reward vault (admin only)
+  // This pre-funds the reward vault with tokens for staker rewards
+  const fundRewards = useCallback(async (
+    amount: number,
+    drmrMint: string
+  ): Promise<string> => {
+    if (!program || !wallet) {
+      throw new Error("Wallet not connected");
+    }
+
+    // Verify wallet is the admin
+    const TRUSTED_ADMIN_ADDRESS = "9ptLw6PHCEhaJw5kEjpQ6eTDwsPoqLM3E64gtzo2Fe8";
+    const walletAddress = wallet.toBase58();
+    
+    if (walletAddress !== TRUSTED_ADMIN_ADDRESS) {
+      try {
+        const pool = await fetchStakingPool();
+        if (pool) {
+          const poolAdminAddress = pool.admin.toBase58();
+          if (walletAddress !== poolAdminAddress) {
+            throw new Error("Only the designated admin wallet can fund rewards");
+          }
+        } else {
+          throw new Error("Only the designated admin wallet can fund rewards");
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes("admin")) {
+          throw err;
+        }
+        throw new Error("Only the designated admin wallet can fund rewards");
+      }
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const drmrMintPubkey = new PublicKey(drmrMint);
+      const [stakingPoolPDA] = deriveStakingPoolPDA();
+      const [rewardVaultPDA] = deriveRewardVaultPDA(stakingPoolPDA);
+      
+      // Get admin's token account (ATA)
+      const adminTokenAccount = await getAssociatedTokenAddress(
+        drmrMintPubkey,
+        wallet
+      );
+
+      // Convert amount to BN (assuming 9 decimals for DRMR)
+      const amountStr = amount.toString();
+      const [integerPart, decimalPart = ""] = amountStr.split(".");
+      const paddedDecimal = (decimalPart + "000000000").slice(0, 9);
+      const rawAmountStr = integerPart + paddedDecimal;
+      
+      if (rawAmountStr === "0" || rawAmountStr.startsWith("-")) {
+        throw new Error("Invalid fund amount. Amount must be a positive number.");
+      }
+      
+      const fundAmount = new BN(rawAmountStr);
+
+      const tx = await program.methods
+        .fundRewards(fundAmount)
+        .accounts({
+          stakingPool: stakingPoolPDA,
+          admin: wallet,
+          drmrMint: drmrMintPubkey,
+          adminTokenAccount: adminTokenAccount,
+          rewardVault: rewardVaultPDA,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .rpc();
+
+      return tx;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fund rewards";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [program, wallet, fetchStakingPool]);
+
   return {
     isLoading,
     error,
@@ -589,5 +671,6 @@ export function useDrmrStaking() {
     updatePoolConfig,
     initializePool,
     closePool,
+    fundRewards,
   };
 }

@@ -74,7 +74,7 @@ export function AdminPasswordModal({
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#111118] p-6 shadow-xl">
         <h2 className="text-xl font-semibold text-white mb-4">Admin Access</h2>
         <p className="text-sm text-white/70 mb-4">Enter the admin password to access the admin panel.</p>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-sm text-white/70 mb-2 block">Password</label>

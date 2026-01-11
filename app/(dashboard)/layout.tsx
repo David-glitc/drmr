@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 
-import { navItems, settingsNav, adminNavItem, stakingAdminNavItem } from "../../lib/nav";
+import { navItems, settingsNav, adminNavItem } from "../../lib/nav";
 import { useAdminVerification } from "../../hooks/useAdminVerification";
 import { useWallet } from "../../hooks/useWallet";
 import { useSolanaAccount } from "../../hooks/useSolanaAccount";
@@ -220,8 +220,8 @@ export default function DashboardLayout({
               );
             })}
             
-            {/* Admin Link - Only shown when authenticated */}
-            {isAdminAuthenticated && (
+            {/* Admin Link - Shown when authenticated via password or when admin wallet is connected */}
+            {(isAdminAuthenticated || isStakingAdmin) && (
               <Link
                 key={adminNavItem.key}
                 href={adminNavItem.href}
@@ -232,29 +232,10 @@ export default function DashboardLayout({
                     : "text-white/70 hover:bg-white/5 hover:text-white"
                 }`}
               >
-                <span className={pathname === adminNavItem.href ? "text-blue-500" : "text-white/50"}>
+                <span className={pathname === adminNavItem.href ? "text-purple-500" : "text-white/50"}>
                   {iconMap[adminNavItem.icon]}
                 </span>
                 {adminNavItem.label}
-              </Link>
-            )}
-            
-            {/* Staking Admin Link - Only shown when trusted admin wallet is connected */}
-            {isStakingAdmin && (
-              <Link
-                key={stakingAdminNavItem.key}
-                href={stakingAdminNavItem.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
-                  pathname === stakingAdminNavItem.href
-                    ? "bg-white/10 text-white"
-                    : "text-white/70 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                <span className={pathname === stakingAdminNavItem.href ? "text-red-500" : "text-white/50"}>
-                  {iconMap[stakingAdminNavItem.icon]}
-                </span>
-                {stakingAdminNavItem.label}
               </Link>
             )}
           </nav>

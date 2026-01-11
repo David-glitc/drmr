@@ -1,6 +1,12 @@
 pub mod close;
 pub use close::*;
 
+pub mod close_token;
+pub use close_token::*;
+
+pub mod fund_rewards;
+pub use fund_rewards::*;
+
 pub mod get_reward;
 pub use get_reward::*;
 
@@ -18,6 +24,3 @@ pub use update_config::*;
 
 pub mod withdraw;
 pub use withdraw::*;
-
-pub mod close_token;
-pub use close_token::*;

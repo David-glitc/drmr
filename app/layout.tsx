@@ -41,13 +41,33 @@ export default function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
-              // Catch ethereum redefinition errors from browser extensions
+              // Prevent ethereum redefinition errors from browser extensions
               (function() {
+                // Make ethereum property configurable to prevent conflicts
+                // This runs before any extensions can lock the property
+                try {
+                  if (typeof window !== 'undefined' && !window.ethereum) {
+                    // Define ethereum as configurable so extensions can modify it
+                    Object.defineProperty(window, 'ethereum', {
+                      value: undefined,
+                      writable: true,
+                      configurable: true,
+                      enumerable: true
+                    });
+                  }
+                } catch (e) {
+                  // Ignore if already defined
+                }
+
                 // Handle errors that occur during extension injection
                 window.addEventListener('error', function(event) {
-                  if (event.error && event.error.message && event.error.message.includes('Cannot redefine property: ethereum')) {
-                    console.warn('[App] Suppressed ethereum property redefinition error (browser extension conflict)');
+                  if (event.error && event.error.message && 
+                      (event.error.message.includes('Cannot redefine property: ethereum') ||
+                       event.error.message.includes('ethereum') && event.error.message.includes('redefine'))) {
+                    console.warn('[App] Suppressed wallet extension conflict (safe to ignore)');
                     event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
                     return false;
                   }
                 }, true);
@@ -56,8 +76,9 @@ export default function RootLayout({
                 window.addEventListener('unhandledrejection', function(event) {
                   const reason = event.reason;
                   const errorMessage = reason?.message || reason?.toString() || String(reason);
-                  if (errorMessage.includes('Cannot redefine property: ethereum')) {
-                    console.warn('[App] Suppressed ethereum property redefinition promise rejection (browser extension conflict)');
+                  if (errorMessage.includes('Cannot redefine property: ethereum') ||
+                      (errorMessage.includes('ethereum') && errorMessage.includes('redefine'))) {
+                    console.warn('[App] Suppressed wallet extension promise rejection (safe to ignore)');
                     event.preventDefault();
                     return false;
                   }

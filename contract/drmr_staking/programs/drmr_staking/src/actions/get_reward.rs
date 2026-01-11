@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+use anchor_spl::token::{Token, TokenAccount};
 use crate::config::{StakingPool, Staker};
 use crate::error::StakingError;
 use crate::global::BASIS_POINTS;
@@ -83,7 +83,7 @@ fn calculate_reward(
     Ok(reward)
 }
 
-/// ### This should be called by the front end every 5 minutes or so
+/// This should be called by the front end every 5 minutes or so
 pub fn get_reward(ctx: Context<GetReward>) -> Result<()> {
     let pool = &ctx.accounts.staking_pool;
     let staker = &mut ctx.accounts.staker;
@@ -114,31 +114,29 @@ pub fn get_reward(ctx: Context<GetReward>) -> Result<()> {
     // Validate reward amount is greater than zero
     require!(reward_amount > 0, StakingError::NoRewardsAvailable);
 
-    // Get account info before mutable borrows
-    let staking_pool_account_info = ctx.accounts.staking_pool.to_account_info();
-
-    // Check if stake_vault has sufficient balance to cover rewards
+    // IMPORTANT: Rewards come from the REWARD_VAULT, not the STAKE_VAULT
+    // The reward_vault must be PRE-FUNDED by the admin/treasury
+    // This prevents User A's rewards from draining User B's staked principal
+    //
+    // Flow:
+    // 1. Admin funds reward_vault with tokens for rewards
+    // 2. Users stake to stake_vault (their principal is safe)
+    // 3. get_reward moves calculated rewards from reward_vault to user's available_rewards
+    // 4. withdraw moves available_rewards from reward_vault to user's wallet
+    // 5. unstake moves principal from stake_vault to user's wallet
+    
+    // Check if reward_vault has sufficient balance to cover rewards
+    // Account for already-reserved rewards (rewards_in_pool tracks rewards claimed but not yet withdrawn)
+    let available_in_vault = ctx.accounts.reward_vault.amount
+        .saturating_sub(pool.rewards_in_pool);
+    
     require!(
-        ctx.accounts.stake_vault.amount >= reward_amount,
+        available_in_vault >= reward_amount,
         StakingError::InsufficientRewards
     );
 
-    // Transfer rewards from stake_vault to reward_vault
-    // Both vaults are owned by staking_pool PDA, so we need to sign with staking_pool seeds
-    let staking_pool_seeds: &[&[u8]] = &[
-        b"staking_pool",
-        &[ctx.bumps.staking_pool],
-    ];
-    let staking_pool_signer = &[staking_pool_seeds];
-
-    let cpi_accounts = Transfer {
-        from: ctx.accounts.stake_vault.to_account_info(),
-        to: ctx.accounts.reward_vault.to_account_info(),
-        authority: staking_pool_account_info,
-    };
-    let cpi_program = ctx.accounts.token_program.to_account_info();
-    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, staking_pool_signer);
-    token::transfer(cpi_ctx, reward_amount)?;
+    // Update staker's available rewards (no transfer yet - just accounting)
+    // The actual tokens stay in reward_vault until withdraw() is called
 
     // update the total rewards claimed
     staker.total_rewards_claimed = staker
@@ -201,19 +199,10 @@ pub struct GetReward<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
-    /// Stake vault: PDA-owned token account holding staked tokens (source for rewards)
+    /// Reward vault: PDA-owned token account holding reward tokens
+    /// IMPORTANT: This vault must be PRE-FUNDED by the admin/treasury
+    /// Rewards are tracked in staker.available_rewards until withdrawn
     #[account(
-        mut,
-        seeds = [b"stake_vault", staking_pool.key().as_ref()],
-        bump,
-        constraint = stake_vault.mint == staking_pool.drmr_mint @ StakingError::InvalidAmount
-    )]
-    pub stake_vault: Account<'info, TokenAccount>,
-
-    /// Reward vault: PDA-owned token account holding reward tokens (destination)
-    /// Rewards are transferred here and can be withdrawn later via withdraw function
-    #[account(
-        mut,
         seeds = [b"reward_vault", staking_pool.key().as_ref()],
         bump,
         constraint = reward_vault.mint == staking_pool.drmr_mint @ StakingError::InvalidAmount

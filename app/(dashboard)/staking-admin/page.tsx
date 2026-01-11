@@ -4,11 +4,41 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useDrmrStaking } from "../../../hooks/useDrmrStaking";
 import { useAdminVerification } from "../../../hooks/useAdminVerification";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminPasswordModal } from "../../../components/AdminPasswordModal";
 import { PublicKey } from "@solana/web3.js";
 
-type Tab = "monitoring" | "pool-details" | "manage-pool" | "initialize-pool" | "close-pool";
+type Tab = "monitoring" | "pool-details" | "manage-pool" | "fund-rewards" | "initialize-pool" | "close-pool" | "users" | "platform-stats";
+
+// User interface for platform admin
+interface User {
+  id: string;
+  walletAddress: string;
+  email?: string;
+  username?: string;
+  isAdmin: boolean;
+  isActive: boolean;
+  totalStaked: number;
+  totalRewards: number;
+  totalTransactions: number;
+  lastActiveAt?: string;
+  createdAt: string;
+  _count: {
+    activities: number;
+    userData: number;
+  };
+}
+
+interface PlatformStats {
+  totalUsers: number;
+  activeUsers: number;
+  adminUsers: number;
+  totalActivities: number;
+  totalStaked: number;
+  recentUsers: User[];
+  topUsers: User[];
+  activityStats: Array<{ action: string; count: number }>;
+}
 
 // Define verifyPassword function outside component to ensure it's always available
 const createVerifyPassword = (): ((password: string) => Promise<boolean>) => {
@@ -54,13 +84,13 @@ export default function StakingAdminPage() {
     updatePoolConfig, 
     initializePool, 
     closePool,
+    fundRewards,
     fetchAllStakers,
     isLoading, 
     error 
   } = useDrmrStaking();
+  const queryClient = useQueryClient();
   
-  const [isVerified, setIsVerified] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("monitoring");
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [passwordVerified, setPasswordVerified] = useState(false);
@@ -79,6 +109,18 @@ export default function StakingAdminPage() {
   const [newRewardCycleSeconds, setNewRewardCycleSeconds] = useState("");
   const [newApyBps, setNewApyBps] = useState("");
   const [newIsActive, setNewIsActive] = useState<boolean | null>(true);
+  
+  // Form state for fund rewards
+  const [fundAmount, setFundAmount] = useState("");
+  
+  // Platform admin state
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersSearch, setUsersSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  // isVerified = wallet is the admin wallet (required for WRITE access)
+  // passwordVerified = user knows the password (required for READ access)
+  const isVerified = isAdmin;
 
   // Fetch staking pool data
   const { data: stakingPool } = useQuery({
@@ -94,6 +136,76 @@ export default function StakingAdminPage() {
     enabled: passwordVerified && !!stakingPool,
     refetchInterval: 30000,
   });
+
+  // Platform admin - Fetch stats
+  const { data: platformStats, isLoading: statsLoading } = useQuery<PlatformStats>({
+    queryKey: ["admin-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/stats");
+      if (!res.ok) throw new Error("Failed to fetch stats");
+      return res.json();
+    },
+    enabled: passwordVerified,
+    refetchInterval: 30000,
+  });
+
+  // Platform admin - Fetch users
+  const { data: usersData, isLoading: usersLoading } = useQuery({
+    queryKey: ["admin-users", usersPage, usersSearch],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        page: usersPage.toString(),
+        limit: "20",
+        ...(usersSearch && { search: usersSearch }),
+      });
+      const res = await fetch(`/api/users?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch users");
+      return res.json();
+    },
+    enabled: passwordVerified,
+  });
+
+  // Platform admin - Update user mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<User> }) => {
+      const res = await fetch(`/api/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update user");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      setSelectedUser(null);
+    },
+  });
+
+  // Platform admin - Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete user");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      setSelectedUser(null);
+    },
+  });
+
+  const handleUpdateUser = (user: User, updates: Partial<User>) => {
+    updateUserMutation.mutate({ id: user.id, data: updates });
+  };
+
+  const handleDeleteUser = (id: string) => {
+    if (confirm("Are you sure you want to delete this user?")) {
+      deleteUserMutation.mutate(id);
+    }
+  };
 
   // Define verifyPassword function directly - always available as a function
   const verifyPassword = useCallback(async (password: string): Promise<boolean> => {
@@ -263,19 +375,40 @@ export default function StakingAdminPage() {
     }
   };
 
-  // Allow access with just password, wallet not required for viewing
-  // But wallet is required for editing operations
+  // Access Control:
+  // - passwordVerified = Can VIEW (read-only) the admin panel
+  // - isVerified (isAdmin) = Can WRITE (modify) pool settings
 
-  if (isVerifying) {
+  // Effect to show password modal on page load if not authenticated
+  useEffect(() => {
+    if (!passwordVerified) {
+      setPasswordModalOpen(true);
+    }
+  }, [passwordVerified]);
+
+  if (!passwordVerified) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">Admin</h1>
-          <p className="text-xs sm:text-sm text-white/60">Verifying admin access...</p>
+          <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">Staking Admin</h1>
+          <p className="text-xs sm:text-sm text-white/60">Password required to view admin panel</p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-[#111118] p-8">
-          <p className="text-white/70">Verifying admin permissions...</p>
+        <div className="rounded-2xl border border-white/10 bg-[#111118] p-8 text-center">
+          <p className="text-white/70 mb-4">Please enter the admin password to view staking metrics and configurations.</p>
+          <button
+            onClick={() => setPasswordModalOpen(true)}
+            className="rounded-xl border border-blue-500/50 bg-blue-500/10 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-500/20"
+          >
+            Enter Password
+          </button>
         </div>
+        
+        <AdminPasswordModal
+          isOpen={passwordModalOpen}
+          onClose={() => setPasswordModalOpen(false)}
+          onSuccess={handlePasswordSuccess}
+          onVerifyPassword={verifyPassword}
+        />
       </div>
     );
   }
@@ -318,23 +451,33 @@ export default function StakingAdminPage() {
           <p className="text-xs sm:text-sm text-white/60">Manage staking pool configuration</p>
         </div>
 
-        {/* Warning banner if user has password but not admin wallet */}
-        {passwordVerified && (!wallet || !isVerified) && (
-          <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-4">
-            <p className="text-yellow-400 font-semibold mb-1">View-Only Access</p>
-            <p className="text-white/70 text-sm">
-              You have password access to view the admin panel, but only the designated admin wallet can modify pool settings.
-            </p>
-            {wallet && !isVerified && (
-              <p className="text-white/50 text-xs mt-2">
-                Admin Wallet: {trustedAdminAddress.slice(0, 8)}...{trustedAdminAddress.slice(-8)} | 
-                Your Wallet: {wallet.toBase58().slice(0, 8)}...{wallet.toBase58().slice(-8)}
-              </p>
-            )}
-            {!wallet && (
-              <p className="text-white/50 text-xs mt-2">
-                Please connect the admin wallet to modify pool settings.
-              </p>
+        {/* Access level banner */}
+        {passwordVerified && (
+          <div className={`rounded-2xl border p-4 ${
+            isVerified 
+              ? "border-green-500/30 bg-green-500/10" 
+              : "border-yellow-500/30 bg-yellow-500/10"
+          }`}>
+            {isVerified ? (
+              <>
+                <p className="text-green-400 font-semibold mb-1">✓ Full Admin Access</p>
+                <p className="text-white/70 text-sm">
+                  You have full read &amp; write access. You can view metrics and modify pool settings.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-yellow-400 font-semibold mb-1">👁 Read-Only Access</p>
+                <p className="text-white/70 text-sm">
+                  You can view staking metrics and configurations, but cannot modify pool settings.
+                </p>
+                <p className="text-white/50 text-xs mt-2">
+                  Admin Wallet Required: {trustedAdminAddress.slice(0, 8)}...{trustedAdminAddress.slice(-8)}
+                  {wallet && (
+                    <> | Your Wallet: {wallet.toBase58().slice(0, 8)}...{wallet.toBase58().slice(-8)}</>
+                  )}
+                </p>
+              </>
             )}
           </div>
         )}
@@ -364,58 +507,100 @@ export default function StakingAdminPage() {
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex gap-2 border-b border-white/10">
-          <button
-            onClick={() => setActiveTab("monitoring")}
-            className={`px-4 py-2 text-sm font-medium transition ${
-              activeTab === "monitoring"
-                ? "border-b-2 border-white text-white"
-                : "text-white/60 hover:text-white"
-            }`}
-          >
-            Monitoring
-          </button>
-          <button
-            onClick={() => setActiveTab("pool-details")}
-            className={`px-4 py-2 text-sm font-medium transition ${
-              activeTab === "pool-details"
-                ? "border-b-2 border-white text-white"
-                : "text-white/60 hover:text-white"
-            }`}
-          >
-            Pool Details
-          </button>
-          <button
-            onClick={() => setActiveTab("manage-pool")}
-            className={`px-4 py-2 text-sm font-medium transition whitespace-nowrap ${
-              activeTab === "manage-pool"
-                ? "border-b-2 border-white text-white"
-                : "text-white/60 hover:text-white"
-            }`}
-          >
-            Manage Pool
-          </button>
-          <button
-            onClick={() => setActiveTab("initialize-pool")}
-            className={`px-4 py-2 text-sm font-medium transition whitespace-nowrap ${
-              activeTab === "initialize-pool"
-                ? "border-b-2 border-white text-white"
-                : "text-white/60 hover:text-white"
-            }`}
-          >
-            Initialize Pool
-          </button>
-          <button
-            onClick={() => setActiveTab("close-pool")}
-            className={`px-4 py-2 text-sm font-medium transition whitespace-nowrap ${
-              activeTab === "close-pool"
-                ? "border-b-2 border-white text-white"
-                : "text-white/60 hover:text-white"
-            }`}
-          >
-            Close Pool
-          </button>
+        {/* Tabs - Organized by category */}
+        <div className="flex gap-2 border-b border-white/10 overflow-x-auto pb-px">
+          {/* STAKING TABS */}
+          <div className="flex gap-1 items-center">
+            <span className="text-[10px] text-white/40 px-2 uppercase tracking-wider">Staking</span>
+            <button
+              onClick={() => setActiveTab("monitoring")}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
+                activeTab === "monitoring"
+                  ? "border-b-2 border-blue-500 text-blue-400 bg-blue-500/10"
+                  : "text-white/60 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              Stakers
+            </button>
+            <button
+              onClick={() => setActiveTab("pool-details")}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
+                activeTab === "pool-details"
+                  ? "border-b-2 border-blue-500 text-blue-400 bg-blue-500/10"
+                  : "text-white/60 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              Pool
+            </button>
+            <button
+              onClick={() => setActiveTab("manage-pool")}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
+                activeTab === "manage-pool"
+                  ? "border-b-2 border-white text-white bg-white/10"
+                  : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
+              }`}
+            >
+              {!isVerified && "🔒 "}Config
+            </button>
+            <button
+              onClick={() => setActiveTab("fund-rewards")}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
+                activeTab === "fund-rewards"
+                  ? "border-b-2 border-green-500 text-green-400 bg-green-500/10"
+                  : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
+              }`}
+            >
+              {!isVerified && "🔒 "}Fund
+            </button>
+            <button
+              onClick={() => setActiveTab("initialize-pool")}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
+                activeTab === "initialize-pool"
+                  ? "border-b-2 border-yellow-500 text-yellow-400 bg-yellow-500/10"
+                  : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
+              }`}
+            >
+              {!isVerified && "🔒 "}Init
+            </button>
+            <button
+              onClick={() => setActiveTab("close-pool")}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
+                activeTab === "close-pool"
+                  ? "border-b-2 border-red-500 text-red-400 bg-red-500/10"
+                  : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
+              }`}
+            >
+              {!isVerified && "🔒 "}Close
+            </button>
+          </div>
+          
+          {/* Divider */}
+          <div className="w-px bg-white/10 mx-2 self-stretch" />
+          
+          {/* PLATFORM TABS */}
+          <div className="flex gap-1 items-center">
+            <span className="text-[10px] text-white/40 px-2 uppercase tracking-wider">Platform</span>
+            <button
+              onClick={() => setActiveTab("platform-stats")}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
+                activeTab === "platform-stats"
+                  ? "border-b-2 border-purple-500 text-purple-400 bg-purple-500/10"
+                  : "text-white/60 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              Stats
+            </button>
+            <button
+              onClick={() => setActiveTab("users")}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
+                activeTab === "users"
+                  ? "border-b-2 border-purple-500 text-purple-400 bg-purple-500/10"
+                  : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
+              }`}
+            >
+              {!isVerified && "🔒 "}Users
+            </button>
+          </div>
         </div>
 
         {/* Tab Content */}
@@ -718,6 +903,174 @@ export default function StakingAdminPage() {
           </div>
         )}
 
+        {activeTab === "fund-rewards" && (
+          <div className="space-y-6">
+            {!stakingPool ? (
+              <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6">
+                <p className="text-white/70 mb-4">The staking pool has not been initialized yet. Initialize the pool first before funding rewards.</p>
+                <button
+                  onClick={() => setActiveTab("initialize-pool")}
+                  className="rounded-xl border border-yellow-500/50 bg-yellow-500/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-yellow-500/20"
+                >
+                  Go to Initialize Pool
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Info Banner */}
+                <div className="rounded-2xl border border-green-500/30 bg-green-500/10 p-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 className="text-sm font-semibold text-green-400">Pre-funded Reward Vault</h3>
+                  </div>
+                  <p className="text-sm text-white/70">
+                    The reward vault must be pre-funded with DRMR tokens. User stakes are kept separate in the stake vault, 
+                    and rewards are paid out from this reward vault. This ensures user principal is always safe.
+                  </p>
+                </div>
+
+                {/* Current Reward Vault Balance */}
+                <div className="rounded-2xl border border-white/10 bg-[#111118] p-6">
+                  <h2 className="text-lg font-semibold text-white mb-4">Reward Vault Status</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="rounded-xl bg-white/5 p-4">
+                      <p className="text-xs text-white/60 mb-1">Rewards In Pool (Reserved)</p>
+                      <p className="text-xl font-semibold text-yellow-400">
+                        {(Number(stakingPool.rewardsInPool) / 1e9).toLocaleString(undefined, { maximumFractionDigits: 4 })} DRMR
+                      </p>
+                      <p className="text-xs text-white/50 mt-1">Claimed but not yet withdrawn</p>
+                    </div>
+                    <div className="rounded-xl bg-white/5 p-4">
+                      <p className="text-xs text-white/60 mb-1">Total Rewards Distributed</p>
+                      <p className="text-xl font-semibold text-white">
+                        {(Number(stakingPool.totalRewardsDistributed) / 1e9).toLocaleString(undefined, { maximumFractionDigits: 4 })} DRMR
+                      </p>
+                      <p className="text-xs text-white/50 mt-1">All-time claimed rewards</p>
+                    </div>
+                    <div className="rounded-xl bg-white/5 p-4">
+                      <p className="text-xs text-white/60 mb-1">Total Staked</p>
+                      <p className="text-xl font-semibold text-blue-400">
+                        {(Number(stakingPool.totalStaked) / 1e9).toLocaleString(undefined, { maximumFractionDigits: 4 })} DRMR
+                      </p>
+                      <p className="text-xs text-white/50 mt-1">At {stakingPool.apyBps / 100}% APY</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fund Form */}
+                <div className="rounded-2xl border border-white/10 bg-[#111118] p-6">
+                  <h2 className="text-lg font-semibold text-white mb-4">Fund Reward Vault</h2>
+                  <p className="text-sm text-white/70 mb-6">
+                    Transfer DRMR tokens from your wallet to the reward vault. These tokens will be used to pay staking rewards.
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-white/70 mb-2 block">Amount (DRMR)</label>
+                      <input
+                        type="text"
+                        value={fundAmount}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                            setFundAmount(value);
+                          }
+                        }}
+                        placeholder="Enter amount to fund"
+                        className="w-full rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-white outline-none placeholder:text-white/40 focus:border-green-500/50"
+                      />
+                    </div>
+
+                    {/* Quick Amount Buttons */}
+                    <div className="flex gap-2 flex-wrap">
+                      {[1000, 10000, 100000, 1000000].map((amount) => (
+                        <button
+                          key={amount}
+                          onClick={() => setFundAmount(amount.toString())}
+                          className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+                        >
+                          {amount.toLocaleString()} DRMR
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={async () => {
+                        if (!fundAmount || parseFloat(fundAmount) <= 0) {
+                          setErrorMessage("Please enter a valid amount");
+                          return;
+                        }
+                        
+                        const drmrMint = process.env.NEXT_PUBLIC_DRMR_MINT;
+                        if (!drmrMint) {
+                          setErrorMessage("DRMR mint address not configured");
+                          return;
+                        }
+
+                        try {
+                          setErrorMessage(null);
+                          setSuccessMessage(null);
+                          const tx = await fundRewards(parseFloat(fundAmount), drmrMint);
+                          setSuccessMessage(`Successfully funded ${fundAmount} DRMR! TX: ${tx.slice(0, 8)}...`);
+                          setFundAmount("");
+                        } catch (err: any) {
+                          setErrorMessage(err.message || "Failed to fund rewards");
+                        }
+                      }}
+                      disabled={isLoading || !isVerified || !fundAmount}
+                      className="w-full rounded-xl border border-green-500/50 bg-green-500/20 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? "Funding..." : `Fund ${fundAmount || "0"} DRMR`}
+                    </button>
+
+                    {!isVerified && (
+                      <p className="text-xs text-yellow-400 text-center">
+                        Only the designated admin wallet can fund rewards
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Estimated Requirements */}
+                <div className="rounded-2xl border border-white/10 bg-[#111118] p-6">
+                  <h2 className="text-lg font-semibold text-white mb-4">Funding Calculator</h2>
+                  <p className="text-sm text-white/70 mb-4">
+                    Estimate how much you need to fund based on expected staking activity.
+                  </p>
+                  <div className="rounded-xl bg-white/5 p-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-white/60">Current Total Staked:</span>
+                        <span className="text-white ml-2">
+                          {(Number(stakingPool.totalStaked) / 1e9).toLocaleString()} DRMR
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-white/60">APY:</span>
+                        <span className="text-white ml-2">{stakingPool.apyBps / 100}%</span>
+                      </div>
+                      <div>
+                        <span className="text-white/60">Annual Rewards Needed:</span>
+                        <span className="text-green-400 ml-2">
+                          ~{((Number(stakingPool.totalStaked) / 1e9) * (stakingPool.apyBps / 10000)).toLocaleString(undefined, { maximumFractionDigits: 0 })} DRMR
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-white/60">Monthly Rewards Needed:</span>
+                        <span className="text-green-400 ml-2">
+                          ~{((Number(stakingPool.totalStaked) / 1e9) * (stakingPool.apyBps / 10000) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })} DRMR
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === "initialize-pool" && (
           <div className="space-y-6">
             {stakingPool ? (
@@ -883,6 +1236,236 @@ export default function StakingAdminPage() {
             )}
           </div>
         )}
+
+        {/* PLATFORM STATS TAB */}
+        {activeTab === "platform-stats" && (
+          <div className="space-y-6">
+            {/* Stats Overview */}
+            {statsLoading ? (
+              <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="h-20 sm:h-24 animate-pulse rounded-xl border border-white/10 bg-[#111118]"
+                  />
+                ))}
+              </div>
+            ) : platformStats ? (
+              <>
+                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-xl border border-white/10 bg-[#111118] p-4">
+                    <p className="text-xs text-white/60">Total Users</p>
+                    <p className="mt-2 text-2xl font-bold text-white">{platformStats.totalUsers.toLocaleString()}</p>
+                    <p className="mt-1 text-xs text-white/50">{platformStats.activeUsers} active</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-[#111118] p-4">
+                    <p className="text-xs text-white/60">Active Users (7d)</p>
+                    <p className="mt-2 text-2xl font-bold text-white">{platformStats.activeUsers.toLocaleString()}</p>
+                    <p className="mt-1 text-xs text-white/50">{platformStats.adminUsers} admins</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-[#111118] p-4">
+                    <p className="text-xs text-white/60">Total Staked</p>
+                    <p className="mt-2 text-2xl font-bold text-white">{platformStats.totalStaked.toFixed(2)} DRMR</p>
+                    <p className="mt-1 text-xs text-white/50">{platformStats.totalActivities} activities</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-[#111118] p-4">
+                    <p className="text-xs text-white/60">Total Activities</p>
+                    <p className="mt-2 text-2xl font-bold text-white">{platformStats.totalActivities.toLocaleString()}</p>
+                    <p className="mt-1 text-xs text-white/50">All time</p>
+                  </div>
+                </div>
+
+                {/* Activity Stats */}
+                {platformStats.activityStats.length > 0 && (
+                  <div className="rounded-xl border border-white/10 bg-[#111118] p-6">
+                    <h2 className="mb-4 text-lg font-semibold text-white">Activity Breakdown</h2>
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                      {platformStats.activityStats.map((stat) => (
+                        <div
+                          key={stat.action}
+                          className="rounded-lg border border-white/10 bg-[#0a0a0f] p-3"
+                        >
+                          <p className="text-xs text-white/60">{stat.action}</p>
+                          <p className="mt-1 text-lg font-semibold text-white">{stat.count}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-[#111118] p-6">
+                <p className="text-white/70">No platform stats available</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* USERS TAB */}
+        {activeTab === "users" && (
+          <div className="space-y-6">
+            <div className="rounded-xl border border-white/10 bg-[#111118] p-4 sm:p-6">
+              <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <h2 className="text-base sm:text-lg font-semibold text-white">Users</h2>
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={usersSearch}
+                  onChange={(e) => {
+                    setUsersSearch(e.target.value);
+                    setUsersPage(1);
+                  }}
+                  className="w-full sm:w-auto rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-2 text-sm text-white placeholder-white/40 focus:border-blue-500/50 focus:outline-none"
+                />
+              </div>
+
+              {usersLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className="h-16 animate-pulse rounded-lg border border-white/10 bg-[#0a0a0f]"
+                    />
+                  ))}
+                </div>
+              ) : usersData?.users?.length > 0 ? (
+                <>
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <div className="inline-block min-w-full align-middle">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-white/10 text-left text-xs text-white/60">
+                            <th className="pb-3 pr-2 sm:pr-4">Wallet</th>
+                            <th className="pb-3 pr-2 sm:pr-4 hidden sm:table-cell">Username</th>
+                            <th className="pb-3 pr-2 sm:pr-4 hidden md:table-cell">Email</th>
+                            <th className="pb-3 pr-2 sm:pr-4">Staked</th>
+                            <th className="pb-3 pr-2 sm:pr-4 hidden lg:table-cell">Activities</th>
+                            <th className="pb-3 pr-2 sm:pr-4">Status</th>
+                            <th className="pb-3 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {usersData.users.map((user: User) => (
+                            <tr
+                              key={user.id}
+                              className="border-b border-white/5 text-sm hover:bg-white/5"
+                            >
+                              <td className="py-3 pr-2 sm:pr-4">
+                                <div className="font-mono text-xs text-white">
+                                  <span className="hidden sm:inline">
+                                    {user.walletAddress.slice(0, 6)}...
+                                    {user.walletAddress.slice(-4)}
+                                  </span>
+                                  <span className="sm:hidden">
+                                    {user.walletAddress.slice(0, 4)}...
+                                    {user.walletAddress.slice(-2)}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3 pr-2 sm:pr-4 text-white/70 hidden sm:table-cell">
+                                {user.username || "—"}
+                              </td>
+                              <td className="py-3 pr-2 sm:pr-4 text-white/70 hidden md:table-cell">
+                                {user.email || "—"}
+                              </td>
+                              <td className="py-3 pr-2 sm:pr-4 text-white">
+                                <span className="text-xs sm:text-sm">{user.totalStaked.toFixed(2)} DRMR</span>
+                              </td>
+                              <td className="py-3 pr-2 sm:pr-4 text-white/70 hidden lg:table-cell">
+                                {user._count.activities}
+                              </td>
+                              <td className="py-3 pr-2 sm:pr-4">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+                                  {user.isAdmin && (
+                                    <span className="rounded-full bg-red-500/20 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-red-400">
+                                      Admin
+                                    </span>
+                                  )}
+                                  {user.isActive ? (
+                                    <span className="rounded-full bg-green-500/20 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-green-400">
+                                      Active
+                                    </span>
+                                  ) : (
+                                    <span className="rounded-full bg-white/10 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-white/60">
+                                      Inactive
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-3 text-right">
+                                <div className="flex items-center justify-end gap-1 sm:gap-2 flex-wrap">
+                                  <button
+                                    onClick={() => setSelectedUser(user)}
+                                    className="rounded-lg border border-white/10 bg-[#0a0a0f] px-2 sm:px-3 py-1 text-[10px] sm:text-xs text-white transition hover:border-blue-500/50"
+                                  >
+                                    View
+                                  </button>
+                                  {isVerified && (
+                                    <>
+                                      <button
+                                        onClick={() => handleUpdateUser(user, { isActive: !user.isActive })}
+                                        className="rounded-lg border border-white/10 bg-[#0a0a0f] px-2 sm:px-3 py-1 text-[10px] sm:text-xs text-white transition hover:border-blue-500/50"
+                                      >
+                                        <span className="hidden sm:inline">{user.isActive ? "Deactivate" : "Activate"}</span>
+                                        <span className="sm:hidden">{user.isActive ? "Off" : "On"}</span>
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteUser(user.id)}
+                                        className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 sm:px-3 py-1 text-[10px] sm:text-xs text-red-400 transition hover:border-red-500/50"
+                                      >
+                                        Del
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Pagination */}
+                  {usersData.pagination && (
+                    <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+                      <p className="text-xs text-white/60">
+                        Page {usersData.pagination.page} of {usersData.pagination.totalPages} ({usersData.pagination.total} total)
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
+                          disabled={usersPage === 1}
+                          className="rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-1 text-xs text-white transition hover:border-blue-500/50 disabled:opacity-50"
+                        >
+                          Previous
+                        </button>
+                        <button
+                          onClick={() => setUsersPage((p) => Math.min(usersData.pagination.totalPages, p + 1))}
+                          disabled={usersPage === usersData.pagination.totalPages}
+                          className="rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-1 text-xs text-white transition hover:border-blue-500/50 disabled:opacity-50"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="py-8 text-center text-sm text-white/60">No users found</p>
+              )}
+            </div>
+
+            {/* User Detail Modal */}
+            {selectedUser && (
+              <UserDetailModal
+                user={selectedUser}
+                onClose={() => setSelectedUser(null)}
+                onUpdate={isVerified ? handleUpdateUser : undefined}
+              />
+            )}
+          </div>
+        )}
       </div>
 
       <AdminPasswordModal
@@ -892,5 +1475,139 @@ export default function StakingAdminPage() {
         onVerifyPassword={verifyPassword}
       />
     </>
+  );
+}
+
+// User Detail Modal Component
+function UserDetailModal({
+  user,
+  onClose,
+  onUpdate,
+}: {
+  user: User;
+  onClose: () => void;
+  onUpdate?: (user: User, updates: Partial<User>) => void;
+}) {
+  const [email, setEmail] = useState(user.email || "");
+  const [username, setUsername] = useState(user.username || "");
+  const [isAdmin, setIsAdmin] = useState(user.isAdmin);
+  const [isActive, setIsActive] = useState(user.isActive);
+
+  const handleSave = () => {
+    if (onUpdate) {
+      onUpdate(user, { email, username, isAdmin, isActive });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-2xl rounded-xl border border-white/10 bg-[#111118] p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-white">User Details</h2>
+          <button
+            onClick={onClose}
+            className="text-white/60 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs text-white/60">Wallet Address</label>
+            <p className="mt-1 font-mono text-sm text-white">
+              {user.walletAddress}
+            </p>
+          </div>
+
+          <div>
+            <label className="text-xs text-white/60">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={!onUpdate}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-blue-500/50 focus:outline-none disabled:opacity-50"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-white/60">Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={!onUpdate}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-blue-500/50 focus:outline-none disabled:opacity-50"
+            />
+          </div>
+
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={isAdmin}
+                onChange={(e) => setIsAdmin(e.target.checked)}
+                disabled={!onUpdate}
+                className="rounded border-white/10"
+              />
+              <span className="text-sm text-white">Admin</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                disabled={!onUpdate}
+                className="rounded border-white/10"
+              />
+              <span className="text-sm text-white">Active</span>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-white/60">Total Staked</label>
+              <p className="mt-1 text-sm text-white">
+                {user.totalStaked.toFixed(2)} DRMR
+              </p>
+            </div>
+            <div>
+              <label className="text-xs text-white/60">Total Rewards</label>
+              <p className="mt-1 text-sm text-white">
+                {user.totalRewards.toFixed(2)} DRMR
+              </p>
+            </div>
+            <div>
+              <label className="text-xs text-white/60">Activities</label>
+              <p className="mt-1 text-sm text-white">
+                {user._count.activities}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs text-white/60">User Data</label>
+              <p className="mt-1 text-sm text-white">{user._count.userData}</p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              onClick={onClose}
+              className="rounded-lg border border-white/10 bg-[#0a0a0f] px-4 py-2 text-sm text-white transition hover:border-blue-500/50"
+            >
+              {onUpdate ? "Cancel" : "Close"}
+            </button>
+            {onUpdate && (
+              <button
+                onClick={handleSave}
+                className="rounded-lg border border-blue-500/50 bg-blue-500/20 px-4 py-2 text-sm font-semibold text-blue-400 transition hover:bg-blue-500/30"
+              >
+                Save Changes
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

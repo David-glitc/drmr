@@ -1,0 +1,5 @@
+[workspace]
+resolver = "2"
+members = [
+    "contract/drmr_staking/programs/drmr_staking"
+]

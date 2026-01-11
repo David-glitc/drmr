@@ -5,27 +5,12 @@ export const navItems = [
   { key: "transactions", label: "Activity", href: "/transactions", icon: "history" },
 ] as const;
 
-// Admin nav item (only shown when authenticated)
+// Unified Admin nav item - combines staking admin and platform admin
+// Shown when user has admin access (via password or admin wallet)
 export const adminNavItem = {
   key: "admin",
   label: "Admin",
-  href: "/admin",
-  icon: "gear",
-} as const;
-
-// Staking Admin nav item (only shown when trusted admin wallet is connected)
-export const stakingAdminNavItem = {
-  key: "staking-admin",
-  label: "Admin",
   href: "/staking-admin",
-  icon: "gear",
-} as const;
-
-// Staking Initialize nav item (only shown when trusted admin wallet is connected)
-export const stakingInitializeNavItem = {
-  key: "staking-initialize",
-  label: "Initialize Pool",
-  href: "/staking-initialize",
   icon: "gear",
 } as const;
 

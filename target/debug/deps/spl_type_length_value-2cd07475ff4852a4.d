@@ -1,0 +1,9 @@
+/home/konquest/code_repo/development/drmr/target/debug/deps/spl_type_length_value-2cd07475ff4852a4.d: /home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/lib.rs /home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/error.rs /home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/length.rs /home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/state.rs /home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/variable_len_pack.rs
+
+/home/konquest/code_repo/development/drmr/target/debug/deps/libspl_type_length_value-2cd07475ff4852a4.rmeta: /home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/lib.rs /home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/error.rs /home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/length.rs /home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/state.rs /home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/variable_len_pack.rs
+
+/home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/lib.rs:
+/home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/error.rs:
+/home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/length.rs:
+/home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/state.rs:
+/home/konquest/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-type-length-value-0.8.0/src/variable_len_pack.rs:

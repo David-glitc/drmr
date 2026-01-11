@@ -58,5 +58,11 @@ pub mod drmr_staking {
     pub fn close_token(ctx: Context<CloseToken>) -> Result<()> {
         actions::close_token(ctx)
     }
+
+    /// Fund the reward vault with tokens (admin only)
+    /// Must be called to pre-fund rewards before users can claim
+    pub fn fund_rewards(ctx: Context<FundRewards>, amount: u64) -> Result<()> {
+        actions::fund_rewards(ctx, amount)
+    }
 }
 
