@@ -2,6 +2,7 @@ export const navItems = [
   { key: "portfolio", label: "Portfolio", href: "/portfolio", icon: "chart" },
   { key: "staking", label: "Staking", href: "/staking", icon: "diamond" },
   { key: "tokens", label: "Tokens", href: "/tokens", icon: "coin" },
+  { key: "transactions", label: "Activity", href: "/transactions", icon: "history" },
 ] as const;
 
 // Admin nav item (only shown when authenticated)

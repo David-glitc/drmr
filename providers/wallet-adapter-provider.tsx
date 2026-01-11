@@ -82,7 +82,8 @@ function InnerProvider({ children }: { children: ReactNode }) {
     
     // If custom RPC is set, use it
     if (customRpc) {
-      console.log(`[WalletAdapterProvider] Using custom RPC endpoint for ${network}:`, customRpc);
+      const maskedRpc = customRpc.replace(/api-key=[^&]+/, 'api-key=***');
+      console.log(`[WalletAdapterProvider] Using custom RPC endpoint for ${network}:`, maskedRpc);
       return customRpc;
     }
     

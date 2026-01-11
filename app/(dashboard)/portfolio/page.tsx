@@ -7,6 +7,7 @@ import { usePortfolio } from "../../../hooks/usePortfolio";
 import { useWallet } from "../../../hooks/useWallet";
 import { useSolanaAccount } from "../../../hooks/useSolanaAccount";
 import { useSolPrice } from "../../../hooks/useSolPrice";
+import { useTransactionHistory } from "../../../hooks/useTransactionHistory";
 import { NftCard } from "../../../components/NftCard";
 import { LoadingOverlay } from "../../../components/LoadingOverlay";
 import { ReceiveModal } from "../../../components/ReceiveModal";
@@ -262,6 +263,15 @@ export default function PortfolioPage() {
   );
   const { tokens, nfts, isLoading: portfolioLoading } = usePortfolio();
   const { data: solPrice } = useSolPrice();
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
+  
+  const { transactions, isLoading: transactionsLoading } = useTransactionHistory({
+    limit: showAllTransactions ? 100 : 5,
+    sortOrder: "desc",
+    status: "succeeded",
+    enabled: isConnected && Boolean(walletAddress),
+    fetchAll: showAllTransactions,
+  });
 
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
   const [sendModalOpen, setSendModalOpen] = useState(false);
@@ -269,6 +279,9 @@ export default function PortfolioPage() {
   const [sendToken, setSendToken] = useState<{ symbol: string; amount: number; id?: string } | null>(null);
   
   const showLoading = isConnecting;
+  
+  // Display all transactions if showing all, otherwise just first 5
+  const displayedTransactions = showAllTransactions ? transactions : transactions.slice(0, 5);
 
   const totalBalance = solanaAccount && solPrice
     ? solanaAccount.balanceSol * solPrice
@@ -413,30 +426,107 @@ export default function PortfolioPage() {
         )}
       </div>
 
-      {/* Get Started with SOL */}
-      <div className="mt-6 rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6 flex flex-col items-center justify-center min-h-[250px] sm:min-h-[300px]">
-        <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 flex items-center justify-center text-xl sm:text-2xl font-bold text-white/60">
-            $
+      {/* Transaction History Section */}
+      {transactions.length > 0 ? (
+        <div className="mt-6 rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base sm:text-lg font-semibold text-white">Recent Transactions</h2>
+            {transactions.length > 5 && (
+              <button
+                onClick={() => setShowAllTransactions(!showAllTransactions)}
+                className="text-xs sm:text-sm text-blue-400 hover:text-blue-300 transition"
+              >
+                {showAllTransactions ? "Show Less" : `Show All (${transactions.length})`}
+              </button>
+            )}
           </div>
-          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 flex items-center justify-center text-xl sm:text-2xl font-bold text-white/60">
-            SOL
-          </div>
+          {transactionsLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-16 rounded-xl border border-white/10 bg-white/5 animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {displayedTransactions.map((tx) => {
+                const date = new Date(tx.blockTime * 1000);
+                const formattedDate = date.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                });
+                const formattedTime = date.toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+
+                return (
+                  <div
+                    key={tx.signature}
+                    className="rounded-xl border border-white/10 bg-[#0a0a0f] p-4 hover:bg-white/5 transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="shrink-0 w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <svg
+                            className="w-5 h-5 text-green-400"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-white truncate">
+                            Transaction
+                          </p>
+                          <p className="text-xs text-white/60 truncate font-mono">
+                            {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs text-white/60">{formattedDate}</p>
+                        <p className="text-xs text-white/40">{formattedTime}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-        <h2 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Get started with SOL</h2>
-        <p className="text-xs sm:text-sm text-white/60 text-center mb-4 sm:mb-6 max-w-sm px-2">
-          Receive SOL to start trading, staking, and exploring. You&apos;ll need a tiny amount of SOL for each Solana transaction.
-        </p>
-        <button 
-          onClick={() => {
-            setSelectedToken({ symbol: "SOL" });
-            setReceiveModalOpen(true);
-          }}
-          className="rounded-xl border border-blue-500/50 bg-blue-500/20 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-blue-400 transition hover:bg-blue-500/30"
-        >
-          Receive
-        </button>
-      </div>
+      ) : !transactionsLoading && isConnected ? (
+        <div className="mt-6 rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6 flex flex-col items-center justify-center min-h-[250px] sm:min-h-[300px]">
+          <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 flex items-center justify-center text-xl sm:text-2xl font-bold text-white/60">
+              $
+            </div>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 flex items-center justify-center text-xl sm:text-2xl font-bold text-white/60">
+              SOL
+            </div>
+          </div>
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Get started with SOL</h2>
+          <p className="text-xs sm:text-sm text-white/60 text-center mb-4 sm:mb-6 max-w-sm px-2">
+            Receive SOL to start trading, staking, and exploring. You&apos;ll need a tiny amount of SOL for each Solana transaction.
+          </p>
+          <button 
+            onClick={() => {
+              setSelectedToken({ symbol: "SOL" });
+              setReceiveModalOpen(true);
+            }}
+            className="rounded-xl border border-blue-500/50 bg-blue-500/20 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-blue-400 transition hover:bg-blue-500/30"
+          >
+            Receive
+          </button>
+        </div>
+      ) : null}
 
       {/* Tokens Section */}
       <div className="mt-6 rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6">

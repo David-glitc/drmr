@@ -28,6 +28,8 @@ NEXT_PUBLIC_SOLANA_RPC_DEVNET=https://solana-devnet.g.alchemy.com/v2/YOUR_API_KE
 # Example with API key (Helius format):
 # NEXT_PUBLIC_SOLANA_RPC_MAINNET=https://mainnet.helius-rpc.com/?api-key=YOUR_API_KEY
 # NEXT_PUBLIC_SOLANA_RPC_DEVNET=https://devnet.helius-rpc.com/?api-key=YOUR_API_KEY
+NEXT_PUBLIC_SOLANA_RPC_MAINNET=https://mainnet.helius-rpc.com/?api-key=057b3e58-abee-40df-9898-95d0b8bca95f 
+NEXT_PUBLIC_SOLANA_RPC_DEVNET=https://devnet.helius-rpc.com/?api-key=057b3e58-abee-40df-9898-95d0b8bca95f 
 
 # Example with API key (QuickNode format):
 # NEXT_PUBLIC_SOLANA_RPC_MAINNET=https://YOUR_ENDPOINT.solana-mainnet.quiknode.pro/YOUR_API_KEY/

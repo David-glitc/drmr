@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 
 import { navItems, settingsNav, adminNavItem, stakingAdminNavItem } from "../../lib/nav";
 import { useAdminVerification } from "../../hooks/useAdminVerification";
@@ -52,6 +52,12 @@ const iconMap: Record<string, React.ReactElement> = {
       <path d="M19.4 15a7.97 7.97 0 000-6l-2.2-.4-1-2-2.2.4-1.1-2h-2.2l-1.1 2-2.2-.4-1 2-2.2.4a7.97 7.97 0 000 6l2.2.4 1 2 2.2-.4 1.1 2h2.2l1.1-2 2.2.4 1-2 2.2-.4z" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  history: (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 8v4l3 3" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="10" />
+    </svg>
+  ),
 };
 
 export default function DashboardLayout({
@@ -73,6 +79,35 @@ export default function DashboardLayout({
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
   const [adminPasswordModalOpen, setAdminPasswordModalOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+
+  // Password verification function
+  const verifyPassword = useCallback(async (password: string): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/admin/verify-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.success === true;
+    } catch (error) {
+      console.error("[Layout] Error verifying password:", error);
+      throw error;
+    }
+  }, []);
 
   // Check admin authentication on mount and when storage changes
   useEffect(() => {
@@ -418,6 +453,7 @@ export default function DashboardLayout({
           isOpen={adminPasswordModalOpen}
           onClose={() => setAdminPasswordModalOpen(false)}
           onSuccess={() => setIsAdminAuthenticated(true)}
+          onVerifyPassword={verifyPassword}
         />
       </div>
     </div>

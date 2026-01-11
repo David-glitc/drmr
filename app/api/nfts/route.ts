@@ -41,7 +41,9 @@ export async function GET(request: NextRequest) {
       rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC || clusterApiUrl(network as Cluster);
     }
     
-    console.log(`[NFT API] Using RPC endpoint for ${network}:`, rpcUrl);
+    // RPC endpoint configured (API key masked for security)
+    const maskedRpc = rpcUrl.replace(/api-key=[^&]+/, 'api-key=***');
+    console.log(`[NFT API] Using RPC endpoint for ${network}:`, maskedRpc);
     
     // Validate address
     try {

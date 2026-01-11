@@ -19,7 +19,9 @@ export function useSolanaAccount(address: string | null) {
 
       try {
         console.log("[useSolanaAccount] Fetching balance for address:", address);
-        console.log("[useSolanaAccount] Connection endpoint:", (connection as any)._rpcEndpoint || "unknown");
+        const endpoint = (connection as any)._rpcEndpoint || "unknown";
+        const maskedEndpoint = typeof endpoint === 'string' ? endpoint.replace(/api-key=[^&]+/, 'api-key=***') : endpoint;
+        console.log("[useSolanaAccount] Connection endpoint:", maskedEndpoint);
         const publicKey = new PublicKey(address);
         console.log("[useSolanaAccount] PublicKey created:", publicKey.toBase58());
         
