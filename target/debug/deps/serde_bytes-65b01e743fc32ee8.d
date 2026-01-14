@@ -1,0 +1,10 @@
+C:\Users\lenovo\Documents\GitHub\c\DRMR\drmr-dashboard\target\debug\deps\serde_bytes-65b01e743fc32ee8.d: C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\lib.rs C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\bytearray.rs C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\bytes.rs C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\de.rs C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\ser.rs C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\bytebuf.rs
+
+C:\Users\lenovo\Documents\GitHub\c\DRMR\drmr-dashboard\target\debug\deps\libserde_bytes-65b01e743fc32ee8.rmeta: C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\lib.rs C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\bytearray.rs C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\bytes.rs C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\de.rs C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\ser.rs C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\bytebuf.rs
+
+C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\lib.rs:
+C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\bytearray.rs:
+C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\bytes.rs:
+C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\de.rs:
+C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\ser.rs:
+C:\Users\lenovo\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde_bytes-0.11.19\src\bytebuf.rs:
