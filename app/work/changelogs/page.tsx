@@ -182,7 +182,7 @@ export default function ChangelogsPage() {
       : changelogData.filter((entry) => entry.type === filter);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-[#000d1f] text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="space-y-6">
           {/* Header */}
@@ -203,100 +203,98 @@ export default function ChangelogsPage() {
             </Link>
           </div>
 
-      {/* Filter Buttons */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={() => setFilter("all")}
-          className={`rounded-xl border px-4 py-2 text-xs sm:text-sm font-semibold transition ${
-            filter === "all"
-              ? "border-white/20 bg-white/10 text-white"
-              : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
-          }`}
-        >
-          All
-        </button>
-        {Object.entries(typeLabels).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setFilter(key)}
-            className={`rounded-xl border px-4 py-2 text-xs sm:text-sm font-semibold transition ${
-              filter === key
-                ? `${typeColors[key as keyof typeof typeColors]} border-current`
+          {/* Filter Buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setFilter("all")}
+              className={`rounded-xl border px-4 py-2 text-xs sm:text-sm font-semibold transition ${filter === "all"
+                ? "border-white/20 bg-white/10 text-white"
                 : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Changelog Entries */}
-      <div className="space-y-6">
-        {filteredChangelogs.map((entry, index) => (
-          <div
-            key={index}
-            className="rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6"
-          >
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <div className="flex items-center gap-3">
-                <span
-                  className={`rounded-lg border px-3 py-1 text-xs font-semibold ${typeColors[entry.type]}`}
-                >
-                  {typeLabels[entry.type]}
-                </span>
-                <h2 className="text-lg sm:text-xl font-semibold text-white">
-                  {entry.title}
-                </h2>
-              </div>
-              <div className="flex items-center gap-4 text-sm text-white/60">
-                <span>v{entry.version}</span>
-                <span>•</span>
-                <span>{entry.date}</span>
-              </div>
-            </div>
-
-            {/* Description */}
-            <ul className="space-y-2 mb-4">
-              {entry.description.map((item, itemIndex) => (
-                <li
-                  key={itemIndex}
-                  className="flex items-start gap-2 text-sm text-white/70"
-                >
-                  <span className="text-blue-400 mt-1.5 shrink-0">•</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-
-            {/* Image */}
-            {entry.image && (
-              <div className="mt-4 rounded-xl border border-white/10 overflow-hidden bg-white/5 relative w-full" style={{ minHeight: '200px' }}>
-                <Image
-                  src={`/${entry.image}`}
-                  alt={entry.imageAlt || entry.title}
-                  width={1200}
-                  height={600}
-                  className="w-full h-auto object-cover max-h-[600px]"
-                  unoptimized
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = "none";
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = '<div class="p-8 text-center text-white/60 text-sm">Image not available</div>';
-                    }
-                  }}
-                />
-              </div>
-            )}
+                }`}
+            >
+              All
+            </button>
+            {Object.entries(typeLabels).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setFilter(key)}
+                className={`rounded-xl border px-4 py-2 text-xs sm:text-sm font-semibold transition ${filter === key
+                  ? `${typeColors[key as keyof typeof typeColors]} border-current`
+                  : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+                  }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-        ))}
-      </div>
+
+          {/* Changelog Entries */}
+          <div className="space-y-6">
+            {filteredChangelogs.map((entry, index) => (
+              <div
+                key={index}
+                className="rounded-2xl border border-white/10 bg-[#001229] p-4 sm:p-6"
+              >
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`rounded-lg border px-3 py-1 text-xs font-semibold ${typeColors[entry.type]}`}
+                    >
+                      {typeLabels[entry.type]}
+                    </span>
+                    <h2 className="text-lg sm:text-xl font-semibold text-white">
+                      {entry.title}
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-white/60">
+                    <span>v{entry.version}</span>
+                    <span>•</span>
+                    <span>{entry.date}</span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <ul className="space-y-2 mb-4">
+                  {entry.description.map((item, itemIndex) => (
+                    <li
+                      key={itemIndex}
+                      className="flex items-start gap-2 text-sm text-white/70"
+                    >
+                      <span className="text-blue-400 mt-1.5 shrink-0">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Image */}
+                {entry.image && (
+                  <div className="mt-4 rounded-xl border border-white/10 overflow-hidden bg-white/5 relative w-full" style={{ minHeight: '200px' }}>
+                    <Image
+                      src={`/${entry.image}`}
+                      alt={entry.imageAlt || entry.title}
+                      width={1200}
+                      height={600}
+                      className="w-full h-auto object-cover max-h-[600px]"
+                      unoptimized
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = "none";
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = '<div class="p-8 text-center text-white/60 text-sm">Image not available</div>';
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
 
           {/* Empty State */}
           {filteredChangelogs.length === 0 && (
-            <div className="rounded-2xl border border-white/10 bg-[#111118] p-8 text-center">
+            <div className="rounded-2xl border border-white/10 bg-[#001229] p-8 text-center">
               <p className="text-white/60">No changelog entries found for this filter.</p>
             </div>
           )}

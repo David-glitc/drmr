@@ -44,10 +44,10 @@ export function useEnhancedWallet() {
     signAllTransactions,
     signMessage,
   } = useAdapterWallet();
-  
+
   const { connection } = useConnection();
-  const { setVisible } = useWalletModal();
-  
+  const { setVisible, visible } = useWalletModal();
+
   const [walletAddress, setWalletAddress] = useAtom(walletAddressAtom);
   const [walletStatus, setWalletStatus] = useAtom(walletStatusAtom);
   const [walletError, setWalletError] = useAtom(walletErrorAtom);
@@ -69,7 +69,7 @@ export function useEnhancedWallet() {
       setWalletStatus("connected");
       setConnectionStatus("connected");
       setWalletError(null);
-      
+
       // Invalidate cache for old wallet if different
       if (walletAddress && walletAddress !== address) {
         onChainCache.invalidatePattern(`.*:${walletAddress}.*`);
@@ -78,7 +78,7 @@ export function useEnhancedWallet() {
       setWalletAddress(null);
       setWalletStatus("disconnected");
       setConnectionStatus("disconnected");
-      
+
       // Clear cache on disconnect
       if (walletAddress) {
         onChainCache.invalidatePattern(`.*:${walletAddress}.*`);
@@ -94,6 +94,14 @@ export function useEnhancedWallet() {
     setWalletError,
     walletAddress,
   ]);
+
+  // Reset state when modal is closed without connecting
+  useEffect(() => {
+    if (!visible && !connected && !connecting && walletStatus === "connecting") {
+      setWalletStatus("disconnected");
+      setConnectionStatus("disconnected");
+    }
+  }, [visible, connected, connecting, walletStatus, setWalletStatus, setConnectionStatus]);
 
   // Monitor connection health
   useEffect(() => {
@@ -139,7 +147,7 @@ export function useEnhancedWallet() {
       setWalletAddress(null);
       setWalletStatus("disconnected");
       setConnectionStatus("disconnected");
-      
+
       // Clear wallet-specific cache
       if (walletAddress) {
         onChainCache.invalidatePattern(`.*:${walletAddress}.*`);
@@ -166,11 +174,11 @@ export function useEnhancedWallet() {
         );
 
         const signature = await sendTransaction(transaction, connection);
-        
+
         // Invalidate balance cache
         onChainCache.invalidate(`balance:${publicKey.toBase58()}`);
         onChainCache.invalidate(`account:${publicKey.toBase58()}`);
-        
+
         await connection.confirmTransaction(signature, "confirmed");
         return signature;
       } catch (error) {

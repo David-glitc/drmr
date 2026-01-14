@@ -28,7 +28,7 @@ export function useWallet() {
     signMessage,
   } = useAdapterWallet();
   const { connection } = useConnection();
-  const { setVisible } = useWalletModal();
+  const { setVisible, visible } = useWalletModal();
   const [walletAddress, setWalletAddress] = useAtom(walletAddressAtom);
   const [walletStatus, setWalletStatus] = useAtom(walletStatusAtom);
 
@@ -42,10 +42,17 @@ export function useWallet() {
       setWalletAddress(publicKey.toBase58());
       setWalletStatus("connected");
     } else {
-      setWalletAddress(null);
-      setWalletStatus("disconnected");
+      // If modal is closed and we are not connecting/connected, reset status
+      if (!visible && walletStatus === "connecting") {
+        setWalletStatus("disconnected");
+      } else if (!walletStatus || walletStatus !== "connecting") {
+        // Only reset to disconnected if we are not in connecting state (to avoid flickering)
+        // or if we are explicitly disconnected
+        setWalletAddress(null);
+        setWalletStatus("disconnected");
+      }
     }
-  }, [connected, connecting, publicKey, setWalletAddress, setWalletStatus]);
+  }, [connected, connecting, publicKey, setWalletAddress, setWalletStatus, visible, walletStatus]);
 
   const connect = useCallback(() => {
     setWalletStatus("connecting");

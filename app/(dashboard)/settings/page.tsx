@@ -31,7 +31,7 @@ export default function SettingsPage() {
         {toggles.map((item) => (
           <div
             key={item.title}
-            className="rounded-xl border border-white/10 bg-[#111118] p-4"
+            className="rounded-xl border border-white/10 bg-[#001229] p-4"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -44,8 +44,8 @@ export default function SettingsPage() {
             </div>
           </div>
         ))}
-        
-        <div className="rounded-xl border border-white/10 bg-[#111118] p-4 md:col-span-2">
+
+        <div className="rounded-xl border border-white/10 bg-[#001229] p-4 md:col-span-2">
           <p className="text-sm font-semibold text-white mb-3">Notification Channels</p>
           <div className="flex flex-wrap gap-2">
             {notifications.map((channel) => (

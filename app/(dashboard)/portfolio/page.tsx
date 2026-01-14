@@ -41,7 +41,7 @@ function TokenRow({ token }: TokenRowProps) {
   useEffect(() => {
     setLogoUrl(undefined); // Reset to loading state
     let isMounted = true;
-    
+
     import("../../../lib/services/token-logo-service").then(({ getTokenLogo }) => {
       getTokenLogo(token.id, token.symbol)
         .then((url) => {
@@ -95,9 +95,9 @@ function TokenRow({ token }: TokenRowProps) {
       : null;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#111118]">
+    <div className="rounded-xl border border-white/10 bg-[#001229]">
       <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
           <div className="shrink-0 w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center overflow-hidden">
             {token.symbol === "SOL" ? (
               <img
@@ -187,7 +187,7 @@ function TokenRow({ token }: TokenRowProps) {
                 </button>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3">
+            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3">
               <input
                 type="text"
                 inputMode="decimal"
@@ -234,7 +234,7 @@ function TokenRow({ token }: TokenRowProps) {
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
               placeholder="Enter Solana address"
-              className="w-full rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-sm font-mono text-white outline-none placeholder:text-white/40 focus:border-blue-500/50"
+              className="w-full rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3 text-sm font-mono text-white outline-none placeholder:text-white/40 focus:border-blue-500/50"
             />
           </div>
           <button
@@ -264,7 +264,7 @@ export default function PortfolioPage() {
   const { tokens, nfts, isLoading: portfolioLoading } = usePortfolio();
   const { data: solPrice } = useSolPrice();
   const [showAllTransactions, setShowAllTransactions] = useState(false);
-  
+
   const { transactions, isLoading: transactionsLoading } = useTransactionHistory({
     limit: showAllTransactions ? 100 : 5,
     sortOrder: "desc",
@@ -277,9 +277,9 @@ export default function PortfolioPage() {
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState<{ symbol: string; mint?: string } | null>(null);
   const [sendToken, setSendToken] = useState<{ symbol: string; amount: number; id?: string } | null>(null);
-  
+
   const showLoading = isConnecting;
-  
+
   // Display all transactions if showing all, otherwise just first 5
   const displayedTransactions = showAllTransactions ? transactions : transactions.slice(0, 5);
 
@@ -293,7 +293,7 @@ export default function PortfolioPage() {
         <LoadingOverlay show={isConnecting} message="Connecting Wallet..." />
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="mx-auto max-w-md">
-            <div className="rounded-2xl border border-white/10 bg-[#111118] p-8 sm:p-12 text-center">
+            <div className="rounded-2xl border border-white/10 bg-[#001229] p-8 sm:p-12 text-center">
               <div className="mb-6">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-blue-500/50 bg-blue-500/20">
                   <svg
@@ -334,16 +334,16 @@ export default function PortfolioPage() {
   return (
     <>
       <LoadingOverlay show={showLoading} message="Connecting Wallet..." />
-      
+
       {/* Portfolio Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-white mb-2">Portfolio</h1>
-        
+
         {/* Balance Card */}
         {accountLoading || portfolioLoading ? (
           <BalanceSkeleton />
         ) : (
-          <div className="rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6 mb-4">
+          <div className="rounded-2xl border border-white/10 bg-[#001229] p-4 sm:p-6 mb-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm text-white/60">BALANCE</span>
               <svg className="h-4 w-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -353,9 +353,9 @@ export default function PortfolioPage() {
             <p className="text-3xl sm:text-4xl font-bold text-white mb-1 wrap-break-word">
               {solPrice && solanaAccount
                 ? `$${totalBalance.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`
                 : "$0.00"}
             </p>
             <p className="text-sm sm:text-base text-white/70 mb-1">
@@ -366,170 +366,70 @@ export default function PortfolioPage() {
             <p className="text-xs sm:text-sm text-white/60">
               +$0.00 • +0.00%
             </p>
-            
+
             {/* Action Buttons */}
             <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-6">
-            <button 
-              onClick={() => {
-                setSelectedToken({ symbol: "SOL" });
-                setReceiveModalOpen(true);
-              }}
-              className="rounded-xl border border-white/10 bg-white/5 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white transition"
-            >
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-                <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span>Receive</span>
-              </div>
-            </button>
-            <Link
-              href="/staking"
-              className="rounded-xl border border-white/10 bg-white/5 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white transition hover:bg-white/10 text-center"
-            >
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-                <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>Stake</span>
-              </div>
-            </Link>
-            <button 
-              onClick={() => {
-                // Find SOL token or use default
-                const solToken = tokens.find((t: { symbol: string }) => t.symbol === "SOL") || fallbackTokens.find((t: { symbol: string }) => t.symbol === "SOL");
-                if (solToken) {
-                  setSendToken({
-                    symbol: solToken.symbol,
-                    amount: solToken.amount,
-                    id: solToken.id,
-                  });
-                } else {
-                  setSendToken({
-                    symbol: "SOL",
-                    amount: solanaAccount?.balanceSol || 0,
-                  });
-                }
-                setSendModalOpen(true);
-              }}
-              className="rounded-xl border border-white/10 bg-white/5 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-                <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-                <span>Send</span>
-              </div>
-            </button>
+              <button
+                onClick={() => {
+                  setSelectedToken({ symbol: "SOL" });
+                  setReceiveModalOpen(true);
+                }}
+                className="rounded-xl border border-white/10 bg-white/5 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white transition"
+              >
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Receive</span>
+                </div>
+              </button>
+              <Link
+                href="/staking"
+                className="rounded-xl border border-white/10 bg-white/5 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white transition hover:bg-white/10 text-center"
+              >
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span>Stake</span>
+                </div>
+              </Link>
+              <button
+                onClick={() => {
+                  // Find SOL token or use default
+                  const solToken = tokens.find((t: { symbol: string }) => t.symbol === "SOL") || fallbackTokens.find((t: { symbol: string }) => t.symbol === "SOL");
+                  if (solToken) {
+                    setSendToken({
+                      symbol: solToken.symbol,
+                      amount: solToken.amount,
+                      id: solToken.id,
+                    });
+                  } else {
+                    setSendToken({
+                      symbol: "SOL",
+                      amount: solanaAccount?.balanceSol || 0,
+                    });
+                  }
+                  setSendModalOpen(true);
+                }}
+                className="rounded-xl border border-white/10 bg-white/5 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  <span>Send</span>
+                </div>
+              </button>
+            </div>
           </div>
-        </div>
         )}
       </div>
 
-      {/* Transaction History Section */}
-      {transactions.length > 0 ? (
-        <div className="mt-6 rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base sm:text-lg font-semibold text-white">Recent Transactions</h2>
-            {transactions.length > 5 && (
-              <button
-                onClick={() => setShowAllTransactions(!showAllTransactions)}
-                className="text-xs sm:text-sm text-blue-400 hover:text-blue-300 transition"
-              >
-                {showAllTransactions ? "Show Less" : `Show All (${transactions.length})`}
-              </button>
-            )}
-          </div>
-          {transactionsLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-16 rounded-xl border border-white/10 bg-white/5 animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {displayedTransactions.map((tx) => {
-                const date = new Date(tx.blockTime * 1000);
-                const formattedDate = date.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                });
-                const formattedTime = date.toLocaleTimeString("en-US", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
 
-                return (
-                  <div
-                    key={tx.signature}
-                    className="rounded-xl border border-white/10 bg-[#0a0a0f] p-4 hover:bg-white/5 transition"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="shrink-0 w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                          <svg
-                            className="w-5 h-5 text-green-400"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">
-                            Transaction
-                          </p>
-                          <p className="text-xs text-white/60 truncate font-mono">
-                            {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-xs text-white/60">{formattedDate}</p>
-                        <p className="text-xs text-white/40">{formattedTime}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      ) : !transactionsLoading && isConnected ? (
-        <div className="mt-6 rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6 flex flex-col items-center justify-center min-h-[250px] sm:min-h-[300px]">
-          <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 flex items-center justify-center text-xl sm:text-2xl font-bold text-white/60">
-              $
-            </div>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 flex items-center justify-center text-xl sm:text-2xl font-bold text-white/60">
-              SOL
-            </div>
-          </div>
-          <h2 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Get started with SOL</h2>
-          <p className="text-xs sm:text-sm text-white/60 text-center mb-4 sm:mb-6 max-w-sm px-2">
-            Receive SOL to start trading, staking, and exploring. You&apos;ll need a tiny amount of SOL for each Solana transaction.
-          </p>
-          <button 
-            onClick={() => {
-              setSelectedToken({ symbol: "SOL" });
-              setReceiveModalOpen(true);
-            }}
-            className="rounded-xl border border-blue-500/50 bg-blue-500/20 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-blue-400 transition hover:bg-blue-500/30"
-          >
-            Receive
-          </button>
-        </div>
-      ) : null}
 
       {/* Tokens Section */}
-      <div className="mt-6 rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6">
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#001229] p-4 sm:p-6">
         <h2 className="text-base sm:text-lg font-semibold text-white mb-4">Tokens</h2>
         {portfolioLoading ? (
           <TokenListSkeleton count={3} />
@@ -567,7 +467,7 @@ export default function PortfolioPage() {
       />
 
       {/* NFTs Section */}
-      <div className="mt-6 rounded-2xl border border-white/10 bg-[#111118] p-4 sm:p-6">
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#001229] p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-white">Collectibles</h2>
           {!portfolioLoading && nfts.length > 0 && (
@@ -608,6 +508,108 @@ export default function PortfolioPage() {
           </div>
         )}
       </div>
+
+      {/* Transaction History Section */}
+      {transactions.length > 0 ? (
+        <div className="mt-6 rounded-2xl border border-white/10 bg-[#001229] p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base sm:text-lg font-semibold text-white">Recent Transactions</h2>
+            {transactions.length > 5 && (
+              <button
+                onClick={() => setShowAllTransactions(!showAllTransactions)}
+                className="text-xs sm:text-sm text-blue-400 hover:text-blue-300 transition"
+              >
+                {showAllTransactions ? "Show Less" : `Show All (${transactions.length})`}
+              </button>
+            )}
+          </div>
+          {transactionsLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-16 rounded-xl border border-white/10 bg-white/5 animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {displayedTransactions.map((tx) => {
+                const date = new Date(tx.blockTime * 1000);
+                const formattedDate = date.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                });
+                const formattedTime = date.toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+
+                return (
+                  <div
+                    key={tx.signature}
+                    className="rounded-xl border border-white/10 bg-[#000d1f] p-4 hover:bg-white/5 transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="shrink-0 w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <svg
+                            className="w-5 h-5 text-green-400"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-white truncate">
+                            Transaction
+                          </p>
+                          <p className="text-xs text-white/60 truncate font-mono">
+                            {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs text-white/60">{formattedDate}</p>
+                        <p className="text-xs text-white/40">{formattedTime}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : !transactionsLoading && isConnected ? (
+        <div className="mt-6 rounded-2xl border border-white/10 bg-[#001229] p-4 sm:p-6 flex flex-col items-center justify-center min-h-[250px] sm:min-h-[300px]">
+          <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 flex items-center justify-center text-xl sm:text-2xl font-bold text-white/60">
+              $
+            </div>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 flex items-center justify-center text-xl sm:text-2xl font-bold text-white/60">
+              SOL
+            </div>
+          </div>
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-2 text-center">Get started with SOL</h2>
+          <p className="text-xs sm:text-sm text-white/60 text-center mb-4 sm:mb-6 max-w-sm px-2">
+            Receive SOL to start trading, staking, and exploring. You&apos;ll need a tiny amount of SOL for each Solana transaction.
+          </p>
+          <button
+            onClick={() => {
+              setSelectedToken({ symbol: "SOL" });
+              setReceiveModalOpen(true);
+            }}
+            className="rounded-xl border border-blue-500/50 bg-blue-500/20 px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-blue-400 transition hover:bg-blue-500/30"
+          >
+            Receive
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

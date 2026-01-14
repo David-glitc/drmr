@@ -6,7 +6,7 @@ import { AppProviders } from "../providers/app-providers";
 export const metadata: Metadata = {
   title: "DRMR Staking Dashboard",
   description:
-    "Track DRMR & SOL staking performance, monthly burns, and portfolio health in one modern workspace.",
+    "$DRMR Staking dashboard, and portfolio health in one modern workspace.",
   icons: {
     icon: "/logo.jpg",
     shortcut: "/logo.jpg",

@@ -27,7 +27,7 @@ function TokenRow({ token, onMenuClick }: { token: Token; onMenuClick: () => voi
   useEffect(() => {
     setLogoUrl(undefined);
     let isMounted = true;
-    
+
     import("../../../lib/services/token-logo-service").then(({ getTokenLogo }) => {
       getTokenLogo(token.id, token.symbol)
         .then((url) => {
@@ -86,7 +86,7 @@ function TokenRow({ token, onMenuClick }: { token: Token; onMenuClick: () => voi
               <svg className="w-6 h-6 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-[#111118]"></div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-[#001229]"></div>
             </div>
           ) : (
             <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
@@ -113,9 +113,8 @@ function TokenRow({ token, onMenuClick }: { token: Token; onMenuClick: () => voi
             <p className="text-sm font-medium text-white">
               ${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
-            <p className={`text-xs font-medium ${
-              isPositiveChange ? "text-green-400" : isNegativeChange ? "text-red-400" : "text-white/60"
-            }`}>
+            <p className={`text-xs font-medium ${isPositiveChange ? "text-green-400" : isNegativeChange ? "text-red-400" : "text-white/60"
+              }`}>
               {change}
             </p>
           </div>
@@ -128,7 +127,7 @@ function TokenRow({ token, onMenuClick }: { token: Token; onMenuClick: () => voi
       <td className="px-4 py-4">
         <div className="text-right">
           <p className="text-sm font-medium text-white">
-            {token.usd > 0 
+            {token.usd > 0
               ? `$${token.usd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               : "$0.00"
             }
@@ -138,8 +137,8 @@ function TokenRow({ token, onMenuClick }: { token: Token; onMenuClick: () => voi
               ? token.amount >= 1000000
                 ? `${(token.amount / 1000000).toFixed(0)}M`
                 : token.amount >= 1000
-                ? `${(token.amount / 1000).toFixed(0)}K`
-                : token.amount.toLocaleString("en-US", { maximumFractionDigits: 4 })
+                  ? `${(token.amount / 1000).toFixed(0)}K`
+                  : token.amount.toLocaleString("en-US", { maximumFractionDigits: 4 })
               : "0"
             } {token.symbol}
           </p>
@@ -206,7 +205,7 @@ export default function TokensPage() {
         <LoadingOverlay show={isConnecting} message="Connecting Wallet..." />
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="mx-auto max-w-md">
-            <div className="rounded-2xl border border-white/10 bg-[#111118] p-8 sm:p-12 text-center">
+            <div className="rounded-2xl border border-white/10 bg-[#001229] p-8 sm:p-12 text-center">
               <div className="mb-6">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-blue-500/50 bg-blue-500/20">
                   <svg
@@ -247,11 +246,11 @@ export default function TokensPage() {
   return (
     <>
       <LoadingOverlay show={showLoading} message="Loading tokens..." />
-      
+
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-white">Tokens</h1>
-        
+
         <div className="flex items-center gap-3">
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
@@ -276,7 +275,7 @@ export default function TokensPage() {
             >
               Receive
             </button>
-            
+
           </div>
 
           {/* Settings */}
@@ -331,7 +330,7 @@ export default function TokensPage() {
       </div>
 
       {/* Tokens Table */}
-      <div className="rounded-2xl border border-white/10 bg-[#111118] overflow-hidden">
+      <div className="rounded-2xl border border-white/10 bg-[#001229] overflow-hidden">
         {portfolioLoading ? (
           <div className="p-8 text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
@@ -369,7 +368,7 @@ export default function TokensPage() {
         )}
       </div>
 
-      
+
 
       {/* Receive Modal */}
       {isConnected && walletAddress && (

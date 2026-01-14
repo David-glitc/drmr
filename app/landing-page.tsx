@@ -12,26 +12,27 @@ export default function LandingPage() {
   const { walletAddress, isConnected, isConnecting, connect, disconnect } = useWallet();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Redirect to staking page when wallet connects
+  // Redirect to portfolio page when wallet connects
   useEffect(() => {
     if (isConnected && walletAddress) {
-      router.push("/staking");
+      router.push("/portfolio");
     }
   }, [isConnected, walletAddress, router]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white scroll-smooth">
+    <div className="min-h-screen text-white scroll-smooth" style={{ background: 'var(--bg-primary)' }}>
       {/* Loading Overlay */}
-      <LoadingOverlay 
-        show={isConnecting} 
+      <LoadingOverlay
+        show={isConnecting}
         message="Connecting Wallet..."
       />
-      
+
       {/* Navigation */}
-      <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur-sm">
+      <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/10 backdrop-blur-sm" style={{ background: 'var(--bg-navbar)' }}>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className="text-2xl font-bold text-white">
-            $DRMR
+          <Link href="/" className="flex items-center gap-2">
+            <img src="/logo.jpg" alt="DRMR Logo" className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg object-cover" />
+            <span className="text-xl sm:text-2xl font-bold text-white">$DRMR</span>
           </Link>
           <div className="hidden items-center gap-8 md:flex">
             <Link href="/" className="text-sm font-medium text-white hover:text-red-400 transition">
@@ -50,28 +51,30 @@ export default function LandingPage() {
               About
             </a>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Network Toggle - hidden on mobile */}
+            <div className="hidden sm:block">
+              <NetworkToggle />
+            </div>
+
+            {/* Wallet Connection - visible on all screen sizes */}
             {isConnected ? (
-              <div className="hidden items-center gap-2 sm:flex">
-                <NetworkToggle />
-                <button
-                  onClick={disconnect}
-                  className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                >
-                  {walletAddress?.slice(0, 4)}...{walletAddress?.slice(-4)}
-                </button>
-              </div>
+              <button
+                onClick={disconnect}
+                className="rounded-full border border-white/20 bg-white/5 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-white/10 flex items-center gap-2"
+              >
+                <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                <span className="hidden sm:inline">{walletAddress?.slice(0, 4)}...{walletAddress?.slice(-4)}</span>
+                <span className="sm:hidden">Connected</span>
+              </button>
             ) : (
-              <div className="hidden items-center gap-2 sm:flex">
-                <NetworkToggle />
-                <button
-                  onClick={connect}
-                  disabled={isConnecting}
-                  className="rounded-full border border-red-500/50 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isConnecting ? "Connecting..." : "Connect Wallet"}
-                </button>
-              </div>
+              <button
+                onClick={connect}
+                disabled={isConnecting}
+                className="rounded-full border border-red-500/50 bg-red-500/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-red-300 transition hover:bg-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isConnecting ? "Connecting..." : "Connect"}
+              </button>
             )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -88,7 +91,7 @@ export default function LandingPage() {
           </div>
         </div>
         {mobileMenuOpen && (
-          <div className="border-t border-white/10 bg-slate-950/95 md:hidden">
+          <div className="border-t border-white/10 md:hidden" style={{ background: 'var(--bg-primary)' }}>
             <div className="px-4 py-4 space-y-3">
               <Link href="/" className="block text-sm font-medium text-white">
                 Home
@@ -139,7 +142,7 @@ export default function LandingPage() {
               Revive The <span className="text-red-400">American Dream</span>
             </h1>
             <p className="mt-6 text-lg leading-8 text-slate-300 sm:text-xl">
-              The dream isn't dead - it's just been hijacked by Wall Street. Take it back with $DRMR. Real ownership. Real wealth. Real freedom for the people.
+              The dream isn't dead - it's just been hijacked by Wall Street. Take it back with American Dream Coin. Real ownership. Real wealth. Real freedom for the people.
             </p>
             <div className="mt-10 flex items-center justify-center gap-4">
               <Link
@@ -148,6 +151,25 @@ export default function LandingPage() {
               >
                 Connect Wallet to Get Started
               </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Video Section */}
+      <section id="video" className="py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl">
+            <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-4 sm:p-6 backdrop-blur-sm">
+              <div className="aspect-video w-full rounded-xl overflow-hidden">
+                <iframe
+                  className="h-full w-full"
+                  src="https://www.youtube.com/embed/hRxMbbmUaTg"
+                  title="$DRMR Revolution Video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
             </div>
           </div>
         </div>
@@ -223,24 +245,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Video Section */}
-      <section id="video" className="py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-4xl">
-            <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-8 sm:p-12 backdrop-blur-sm">
-              <div className="aspect-video w-full rounded-xl overflow-hidden">
-                <iframe
-                  className="h-full w-full"
-                  src="https://www.youtube.com/embed/hRxMbbmUaTg"
-                  title="$DRMR Revolution Video"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* Manifesto Section */}
       <section id="about" className="py-20 sm:py-28">
@@ -326,10 +331,10 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 bg-slate-950/50 py-12">
+      <footer className="border-t border-white/10 py-12" style={{ background: 'var(--bg-secondary)' }}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
-            <div className="col-span-1 md:col-span-2">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            <div className="col-span-1">
               <h3 className="text-2xl font-bold text-white">$DRMR</h3>
               <p className="mt-2 text-sm text-slate-400">
                 Reviving the American Dream through decentralized finance and true ownership.
@@ -369,18 +374,25 @@ export default function LandingPage() {
               <h4 className="text-sm font-semibold text-white">Social</h4>
               <ul className="mt-4 space-y-2 text-sm text-slate-400">
                 <li>
-                  <a href="#" className="hover:text-white transition">
-                    Twitter
+                  <a
+                    href="https://x.com/drmr1776"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition flex items-center gap-2"
+                  >
+                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    Twitter / X
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition">
+                  <a
+                    href="https://t.me/american_dream_coin"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition flex items-center gap-2"
+                  >
+                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" /></svg>
                     Telegram
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    YouTube
                   </a>
                 </li>
               </ul>

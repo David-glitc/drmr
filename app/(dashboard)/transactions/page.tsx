@@ -32,7 +32,7 @@ function parseTransaction(tx: Transaction, walletAddress: string): ParsedTransac
   // Try to parse transaction instructions
   const transaction = tx.transaction;
   const instructions = transaction?.message?.instructions || [];
-  
+
   // Handle both legacy and versioned transactions
   let accountKeys: string[] = [];
   if (transaction?.message) {
@@ -74,11 +74,11 @@ function parseTransaction(tx: Transaction, walletAddress: string): ParsedTransac
 
   if (walletIndex >= 0 && preBalances[walletIndex] !== undefined && postBalances[walletIndex] !== undefined) {
     const balanceChange = (postBalances[walletIndex] - preBalances[walletIndex]) / LAMPORTS_PER_SOL;
-    
+
     if (Math.abs(balanceChange) > 0.0001) {
       resultAmount = Math.abs(balanceChange);
       isPositive = balanceChange > 0;
-      
+
       if (balanceChange > 0) {
         type = "Received";
         // Try to find sender
@@ -111,9 +111,9 @@ function parseTransaction(tx: Transaction, walletAddress: string): ParsedTransac
       resultAmount = feeSol;
       isPositive = false;
       result = `-<${feeSol.toFixed(2)} SOL`;
-      
+
       // Check if it's a token account creation
-      if (instructions.some((ix: any) => 
+      if (instructions.some((ix: any) =>
         ix.programId === "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" ||
         (typeof ix.programId === "object" && ix.programId?.toBase58?.() === "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
       )) {
@@ -138,7 +138,7 @@ function parseTransaction(tx: Transaction, walletAddress: string): ParsedTransac
     if (Math.abs(tokenChange) > 0) {
       const tokenInfo = tokenTransfers[0]?.mint || preTokenBalances[0]?.mint;
       const tokenSymbol = tokenInfo ? tokenInfo.slice(0, 4) + "..." + tokenInfo.slice(-4) : "Unknown";
-      
+
       if (tokenChange > 0) {
         type = "Received";
         details = `Unknown → ${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
@@ -155,8 +155,8 @@ function parseTransaction(tx: Transaction, walletAddress: string): ParsedTransac
 
   // Check for staking transactions
   if (instructions.some((ix: any) => {
-    const programId = typeof ix.programId === "string" 
-      ? ix.programId 
+    const programId = typeof ix.programId === "string"
+      ? ix.programId
       : ix.programId?.toBase58?.();
     return programId === "Stake11111111111111111111111111111111111111";
   })) {
@@ -283,7 +283,7 @@ export default function TransactionsPage() {
         <LoadingOverlay show={isConnecting} message="Connecting Wallet..." />
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="mx-auto max-w-md">
-            <div className="rounded-2xl border border-white/10 bg-[#111118] p-8 sm:p-12 text-center">
+            <div className="rounded-2xl border border-white/10 bg-[#001229] p-8 sm:p-12 text-center">
               <div className="mb-6">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-blue-500/50 bg-blue-500/20">
                   <svg
@@ -324,11 +324,11 @@ export default function TransactionsPage() {
   return (
     <>
       <LoadingOverlay show={isConnecting} message="Connecting Wallet..." />
-      
+
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-white">Activity</h1>
-        
+
         {/* Wallet Info */}
         {walletAddress && (
           <div className="flex items-center gap-3">
@@ -369,7 +369,7 @@ export default function TransactionsPage() {
       </div>
 
       {/* Transactions Table */}
-      <div className="rounded-2xl border border-white/10 bg-[#111118] overflow-hidden">
+      <div className="rounded-2xl border border-white/10 bg-[#001229] overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>

@@ -79,40 +79,40 @@ const createVerifyPassword = (): ((password: string) => Promise<boolean>) => {
 export default function StakingAdminPage() {
   const { publicKey: wallet } = useWallet();
   const { isAdmin, verifyAdmin, trustedAdminAddress } = useAdminVerification();
-  const { 
-    fetchStakingPool, 
-    updatePoolConfig, 
-    initializePool, 
+  const {
+    fetchStakingPool,
+    updatePoolConfig,
+    initializePool,
     closePool,
     fundRewards,
     fetchAllStakers,
-    isLoading, 
-    error 
+    isLoading,
+    error
   } = useDrmrStaking();
   const queryClient = useQueryClient();
-  
+
   const [activeTab, setActiveTab] = useState<Tab>("monitoring");
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [passwordVerified, setPasswordVerified] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-  
+
   // Form state for initialize pool
   const [initDrmrMint, setInitDrmrMint] = useState("");
   const [initApyBps, setInitApyBps] = useState("");
   const [initMaxStakeEpochCycles, setInitMaxStakeEpochCycles] = useState("");
-  
+
   // Form state for manage pool
   const [newAdmin, setNewAdmin] = useState("");
   const [newStakeEpochCycles, setNewStakeEpochCycles] = useState("");
   const [newRewardCycleSeconds, setNewRewardCycleSeconds] = useState("");
   const [newApyBps, setNewApyBps] = useState("");
   const [newIsActive, setNewIsActive] = useState<boolean | null>(true);
-  
+
   // Form state for fund rewards
   const [fundAmount, setFundAmount] = useState("");
-  
+
   // Platform admin state
   const [usersPage, setUsersPage] = useState(1);
   const [usersSearch, setUsersSearch] = useState("");
@@ -251,12 +251,12 @@ export default function StakingAdminPage() {
       setErrorMessage("Please verify password to access admin panel");
       return;
     }
-    
+
     if (!wallet) {
       setErrorMessage("Please connect your wallet");
       return;
     }
-    
+
     if (!isVerified) {
       setErrorMessage("Only the designated admin wallet can initialize the pool");
       return;
@@ -286,7 +286,7 @@ export default function StakingAdminPage() {
     try {
       const tx = await initializePool(apy, cycles, initDrmrMint);
       setSuccessMessage(`Staking pool initialized successfully! Transaction: ${tx}`);
-      
+
       setInitApyBps("");
       setInitMaxStakeEpochCycles("");
       fetchStakingPool();
@@ -300,12 +300,12 @@ export default function StakingAdminPage() {
       setErrorMessage("Please verify password to access admin panel");
       return;
     }
-    
+
     if (!wallet) {
       setErrorMessage("Please connect your wallet");
       return;
     }
-    
+
     if (!isVerified) {
       setErrorMessage("Only the designated admin wallet can update pool configuration");
       return;
@@ -324,13 +324,13 @@ export default function StakingAdminPage() {
       );
 
       setSuccessMessage(`Pool configuration updated! Transaction: ${tx}`);
-      
+
       setNewAdmin("");
       setNewStakeEpochCycles("");
       setNewRewardCycleSeconds("");
       setNewApyBps("");
       setNewIsActive(true);
-      
+
       fetchStakingPool();
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to update pool configuration");
@@ -342,12 +342,12 @@ export default function StakingAdminPage() {
       setErrorMessage("Please verify password to access admin panel");
       return;
     }
-    
+
     if (!wallet) {
       setErrorMessage("Please connect your wallet");
       return;
     }
-    
+
     if (!isVerified) {
       setErrorMessage("Only the designated admin wallet can close the pool");
       return;
@@ -365,7 +365,7 @@ export default function StakingAdminPage() {
       const tx = await closePool();
       setSuccessMessage(`Pool closed successfully! Transaction: ${tx}`);
       setShowCloseConfirm(false);
-      
+
       // Refetch pool data (should return null after closing)
       setTimeout(() => {
         fetchStakingPool();
@@ -393,7 +393,7 @@ export default function StakingAdminPage() {
           <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">Staking Admin</h1>
           <p className="text-xs sm:text-sm text-white/60">Password required to view admin panel</p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-[#111118] p-8 text-center">
+        <div className="rounded-2xl border border-white/10 bg-[#001229] p-8 text-center">
           <p className="text-white/70 mb-4">Please enter the admin password to view staking metrics and configurations.</p>
           <button
             onClick={() => setPasswordModalOpen(true)}
@@ -402,7 +402,7 @@ export default function StakingAdminPage() {
             Enter Password
           </button>
         </div>
-        
+
         <AdminPasswordModal
           isOpen={passwordModalOpen}
           onClose={() => setPasswordModalOpen(false)}
@@ -422,7 +422,7 @@ export default function StakingAdminPage() {
             <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">Admin</h1>
             <p className="text-xs sm:text-sm text-white/60">Password required to access admin panel</p>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-[#111118] p-8">
+          <div className="rounded-2xl border border-white/10 bg-[#001229] p-8">
             <p className="text-white/70 mb-4">Please enter the admin password to continue.</p>
             <button
               onClick={() => setPasswordModalOpen(true)}
@@ -453,11 +453,10 @@ export default function StakingAdminPage() {
 
         {/* Access level banner */}
         {passwordVerified && (
-          <div className={`rounded-2xl border p-4 ${
-            isVerified 
-              ? "border-green-500/30 bg-green-500/10" 
-              : "border-yellow-500/30 bg-yellow-500/10"
-          }`}>
+          <div className={`rounded-2xl border p-4 ${isVerified
+            ? "border-green-500/30 bg-green-500/10"
+            : "border-yellow-500/30 bg-yellow-500/10"
+            }`}>
             {isVerified ? (
               <>
                 <p className="text-green-400 font-semibold mb-1">✓ Full Admin Access</p>
@@ -514,89 +513,81 @@ export default function StakingAdminPage() {
             <span className="text-[10px] text-white/40 px-2 uppercase tracking-wider">Staking</span>
             <button
               onClick={() => setActiveTab("monitoring")}
-              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
-                activeTab === "monitoring"
-                  ? "border-b-2 border-blue-500 text-blue-400 bg-blue-500/10"
-                  : "text-white/60 hover:text-white hover:bg-white/5"
-              }`}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${activeTab === "monitoring"
+                ? "border-b-2 border-blue-500 text-blue-400 bg-blue-500/10"
+                : "text-white/60 hover:text-white hover:bg-white/5"
+                }`}
             >
               Stakers
             </button>
             <button
               onClick={() => setActiveTab("pool-details")}
-              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
-                activeTab === "pool-details"
-                  ? "border-b-2 border-blue-500 text-blue-400 bg-blue-500/10"
-                  : "text-white/60 hover:text-white hover:bg-white/5"
-              }`}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${activeTab === "pool-details"
+                ? "border-b-2 border-blue-500 text-blue-400 bg-blue-500/10"
+                : "text-white/60 hover:text-white hover:bg-white/5"
+                }`}
             >
               Pool
             </button>
             <button
               onClick={() => setActiveTab("manage-pool")}
-              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
-                activeTab === "manage-pool"
-                  ? "border-b-2 border-white text-white bg-white/10"
-                  : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
-              }`}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${activeTab === "manage-pool"
+                ? "border-b-2 border-white text-white bg-white/10"
+                : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
+                }`}
             >
               {!isVerified && "🔒 "}Config
             </button>
             <button
               onClick={() => setActiveTab("fund-rewards")}
-              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
-                activeTab === "fund-rewards"
-                  ? "border-b-2 border-green-500 text-green-400 bg-green-500/10"
-                  : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
-              }`}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${activeTab === "fund-rewards"
+                ? "border-b-2 border-green-500 text-green-400 bg-green-500/10"
+                : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
+                }`}
             >
               {!isVerified && "🔒 "}Fund
             </button>
             <button
               onClick={() => setActiveTab("initialize-pool")}
-              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
-                activeTab === "initialize-pool"
-                  ? "border-b-2 border-yellow-500 text-yellow-400 bg-yellow-500/10"
-                  : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
-              }`}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${activeTab === "initialize-pool"
+                ? "border-b-2 border-yellow-500 text-yellow-400 bg-yellow-500/10"
+                : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
+                }`}
             >
               {!isVerified && "🔒 "}Init
             </button>
             <button
               onClick={() => setActiveTab("close-pool")}
-              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
-                activeTab === "close-pool"
-                  ? "border-b-2 border-red-500 text-red-400 bg-red-500/10"
-                  : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
-              }`}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${activeTab === "close-pool"
+                ? "border-b-2 border-red-500 text-red-400 bg-red-500/10"
+                : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
+                }`}
             >
               {!isVerified && "🔒 "}Close
             </button>
           </div>
-          
+
           {/* Divider */}
           <div className="w-px bg-white/10 mx-2 self-stretch" />
-          
+
           {/* PLATFORM TABS */}
           <div className="flex gap-1 items-center">
             <span className="text-[10px] text-white/40 px-2 uppercase tracking-wider">Platform</span>
             <button
               onClick={() => setActiveTab("platform-stats")}
-              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
-                activeTab === "platform-stats"
-                  ? "border-b-2 border-purple-500 text-purple-400 bg-purple-500/10"
-                  : "text-white/60 hover:text-white hover:bg-white/5"
-              }`}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${activeTab === "platform-stats"
+                ? "border-b-2 border-purple-500 text-purple-400 bg-purple-500/10"
+                : "text-white/60 hover:text-white hover:bg-white/5"
+                }`}
             >
               Stats
             </button>
             <button
               onClick={() => setActiveTab("users")}
-              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${
-                activeTab === "users"
-                  ? "border-b-2 border-purple-500 text-purple-400 bg-purple-500/10"
-                  : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
-              }`}
+              className={`px-3 py-2 text-sm font-medium transition whitespace-nowrap rounded-t ${activeTab === "users"
+                ? "border-b-2 border-purple-500 text-purple-400 bg-purple-500/10"
+                : isVerified ? "text-white/60 hover:text-white hover:bg-white/5" : "text-white/40"
+                }`}
             >
               {!isVerified && "🔒 "}Users
             </button>
@@ -605,9 +596,9 @@ export default function StakingAdminPage() {
 
         {/* Tab Content */}
         {activeTab === "monitoring" && (
-          <div className="rounded-2xl border border-white/10 bg-[#111118] p-6">
+          <div className="rounded-2xl border border-white/10 bg-[#001229] p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Stakers Monitoring</h2>
-            
+
             {isLoadingStakers ? (
               <p className="text-white/70">Loading stakers...</p>
             ) : !allStakers || allStakers.length === 0 ? (
@@ -632,35 +623,35 @@ export default function StakingAdminPage() {
                       // Calculate accrued rewards (rewards that have accrued since last claim but haven't been calculated via get_reward)
                       const calculateAccruedRewards = () => {
                         if (!stakingPool || Number(staker.amount) === 0) return 0;
-                        
+
                         const now = Math.floor(Date.now() / 1000);
                         const lastClaim = Number(staker.lastClaim);
                         const timeElapsedSeconds = Math.max(0, now - lastClaim);
-                        
+
                         // Minimum 5 minutes (300 seconds) required for rewards (same as contract)
                         if (timeElapsedSeconds < 300) return 0;
-                        
+
                         // Use same calculation as contract: (staked_amount * apy_bps * time_elapsed * PRECISION) / (BASIS_POINTS * seconds_per_year)
                         const BASIS_POINTS = 10000;
                         const PRECISION = 1_000_000_000;
                         const SECONDS_PER_YEAR = 31_557_600;
-                        
+
                         const stakedAmount = Number(staker.amount);
                         const apyBps = stakingPool.apyBps;
-                        
+
                         // Calculate with high precision to avoid rounding errors
                         const numerator = stakedAmount * apyBps * timeElapsedSeconds * PRECISION;
                         const denominator = BASIS_POINTS * SECONDS_PER_YEAR;
                         const rewardWithPrecision = Math.floor(numerator / denominator);
                         const reward = Math.floor(rewardWithPrecision / PRECISION);
-                        
+
                         return reward;
                       };
-                      
+
                       const accruedRewards = calculateAccruedRewards();
                       const availableRewards = Number(staker.availableRewards);
                       const totalAvailable = availableRewards + accruedRewards;
-                      
+
                       return (
                         <tr key={staker.publicKey.toBase58()} className="border-b border-white/5">
                           <td className="py-3 px-4 text-white font-mono text-xs">
@@ -716,7 +707,7 @@ export default function StakingAdminPage() {
                 </button>
               </div>
             ) : (
-              <div className="rounded-2xl border border-white/10 bg-[#111118] p-6">
+              <div className="rounded-2xl border border-white/10 bg-[#001229] p-6">
                 <h2 className="text-lg font-semibold text-white mb-4">Pool Configuration</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -781,9 +772,9 @@ export default function StakingAdminPage() {
           <div className="space-y-6">
             {/* Update Form - Only show when pool exists */}
             {stakingPool && (
-              <div className="rounded-2xl border border-white/10 bg-[#111118] p-6">
+              <div className="rounded-2xl border border-white/10 bg-[#001229] p-6">
                 <h2 className="text-lg font-semibold text-white mb-4">Update Configuration</h2>
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm text-white/70 mb-2 block">New Admin Address (optional)</label>
@@ -792,7 +783,7 @@ export default function StakingAdminPage() {
                       value={newAdmin}
                       onChange={(e) => setNewAdmin(e.target.value)}
                       placeholder="Leave empty to keep current admin"
-                      className="w-full rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
+                      className="w-full rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
                     />
                   </div>
 
@@ -803,7 +794,7 @@ export default function StakingAdminPage() {
                       value={newStakeEpochCycles}
                       onChange={(e) => setNewStakeEpochCycles(e.target.value)}
                       placeholder={stakingPool?.stakeEpochCycles.toString() || "Current value"}
-                      className="w-full rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
+                      className="w-full rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
                     />
                   </div>
 
@@ -814,7 +805,7 @@ export default function StakingAdminPage() {
                       value={newRewardCycleSeconds}
                       onChange={(e) => setNewRewardCycleSeconds(e.target.value)}
                       placeholder={stakingPool?.rewardCycleSeconds.toString() || "Current value"}
-                      className="w-full rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
+                      className="w-full rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
                     />
                     <p className="text-xs text-white/50 mt-1">Example: 86400 = 1 day, 300 = 5 minutes</p>
                   </div>
@@ -826,7 +817,7 @@ export default function StakingAdminPage() {
                       value={newApyBps}
                       onChange={(e) => setNewApyBps(e.target.value)}
                       placeholder={`${stakingPool?.apyBps || 0} (${((stakingPool?.apyBps || 0) / 100).toFixed(2)}%)`}
-                      className="w-full rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
+                      className="w-full rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
                     />
                     <p className="text-xs text-white/50 mt-1">10000 = 100%, 1000 = 10%, Max: 10000</p>
                   </div>
@@ -836,31 +827,28 @@ export default function StakingAdminPage() {
                     <div className="flex gap-3">
                       <button
                         onClick={() => setNewIsActive(true)}
-                        className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition ${
-                          newIsActive === true
-                            ? "border-green-500 bg-green-500/10 text-white"
-                            : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
-                        }`}
+                        className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition ${newIsActive === true
+                          ? "border-green-500 bg-green-500/10 text-white"
+                          : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+                          }`}
                       >
                         Active
                       </button>
                       <button
                         onClick={() => setNewIsActive(false)}
-                        className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition ${
-                          newIsActive === false
-                            ? "border-red-500 bg-red-500/10 text-white"
-                            : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
-                        }`}
+                        className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition ${newIsActive === false
+                          ? "border-red-500 bg-red-500/10 text-white"
+                          : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+                          }`}
                       >
                         Inactive
                       </button>
                       <button
                         onClick={() => setNewIsActive(null)}
-                        className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition ${
-                          newIsActive === null
-                            ? "border-blue-500 bg-blue-500/10 text-white"
-                            : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
-                        }`}
+                        className={`flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition ${newIsActive === null
+                          ? "border-blue-500 bg-blue-500/10 text-white"
+                          : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+                          }`}
                       >
                         No Change
                       </button>
@@ -926,13 +914,13 @@ export default function StakingAdminPage() {
                     <h3 className="text-sm font-semibold text-green-400">Pre-funded Reward Vault</h3>
                   </div>
                   <p className="text-sm text-white/70">
-                    The reward vault must be pre-funded with DRMR tokens. User stakes are kept separate in the stake vault, 
+                    The reward vault must be pre-funded with DRMR tokens. User stakes are kept separate in the stake vault,
                     and rewards are paid out from this reward vault. This ensures user principal is always safe.
                   </p>
                 </div>
 
                 {/* Current Reward Vault Balance */}
-                <div className="rounded-2xl border border-white/10 bg-[#111118] p-6">
+                <div className="rounded-2xl border border-white/10 bg-[#001229] p-6">
                   <h2 className="text-lg font-semibold text-white mb-4">Reward Vault Status</h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="rounded-xl bg-white/5 p-4">
@@ -960,12 +948,12 @@ export default function StakingAdminPage() {
                 </div>
 
                 {/* Fund Form */}
-                <div className="rounded-2xl border border-white/10 bg-[#111118] p-6">
+                <div className="rounded-2xl border border-white/10 bg-[#001229] p-6">
                   <h2 className="text-lg font-semibold text-white mb-4">Fund Reward Vault</h2>
                   <p className="text-sm text-white/70 mb-6">
                     Transfer DRMR tokens from your wallet to the reward vault. These tokens will be used to pay staking rewards.
                   </p>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm text-white/70 mb-2 block">Amount (DRMR)</label>
@@ -979,7 +967,7 @@ export default function StakingAdminPage() {
                           }
                         }}
                         placeholder="Enter amount to fund"
-                        className="w-full rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-white outline-none placeholder:text-white/40 focus:border-green-500/50"
+                        className="w-full rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3 text-white outline-none placeholder:text-white/40 focus:border-green-500/50"
                       />
                     </div>
 
@@ -1002,7 +990,7 @@ export default function StakingAdminPage() {
                           setErrorMessage("Please enter a valid amount");
                           return;
                         }
-                        
+
                         const drmrMint = process.env.NEXT_PUBLIC_DRMR_MINT;
                         if (!drmrMint) {
                           setErrorMessage("DRMR mint address not configured");
@@ -1034,7 +1022,7 @@ export default function StakingAdminPage() {
                 </div>
 
                 {/* Estimated Requirements */}
-                <div className="rounded-2xl border border-white/10 bg-[#111118] p-6">
+                <div className="rounded-2xl border border-white/10 bg-[#001229] p-6">
                   <h2 className="text-lg font-semibold text-white mb-4">Funding Calculator</h2>
                   <p className="text-sm text-white/70 mb-4">
                     Estimate how much you need to fund based on expected staking activity.
@@ -1094,7 +1082,7 @@ export default function StakingAdminPage() {
                   <h2 className="text-lg font-semibold text-white">Initialize Staking Pool</h2>
                 </div>
                 <p className="text-sm text-white/70 mb-6">The staking pool has not been initialized yet. Please configure and initialize it below.</p>
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm text-white/70 mb-2 block">DRMR Mint Address *</label>
@@ -1103,7 +1091,7 @@ export default function StakingAdminPage() {
                       value={initDrmrMint}
                       onChange={(e) => setInitDrmrMint(e.target.value)}
                       placeholder="Enter DRMR token mint address"
-                      className="w-full rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
+                      className="w-full rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
                     />
                   </div>
 
@@ -1114,7 +1102,7 @@ export default function StakingAdminPage() {
                       value={initApyBps}
                       onChange={(e) => setInitApyBps(e.target.value)}
                       placeholder="1000 (10%)"
-                      className="w-full rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
+                      className="w-full rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
                     />
                     <p className="text-xs text-white/50 mt-1">10000 = 100%, 1000 = 10%, Max: 10000</p>
                   </div>
@@ -1126,7 +1114,7 @@ export default function StakingAdminPage() {
                       value={initMaxStakeEpochCycles}
                       onChange={(e) => setInitMaxStakeEpochCycles(e.target.value)}
                       placeholder="4"
-                      className="w-full rounded-xl border border-white/10 bg-[#0a0a0f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
+                      className="w-full rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
                     />
                     <p className="text-xs text-white/50 mt-1">Minimum: 1 epoch cycle</p>
                   </div>
@@ -1190,11 +1178,11 @@ export default function StakingAdminPage() {
                   <h2 className="text-lg font-semibold text-white">Close Staking Pool</h2>
                 </div>
                 <p className="text-sm text-white/70 mb-4">
-                  <strong className="text-red-400">Warning:</strong> Closing the pool is a destructive operation. 
-                  This will close the staking pool account and send the rent to the admin. 
+                  <strong className="text-red-400">Warning:</strong> Closing the pool is a destructive operation.
+                  This will close the staking pool account and send the rent to the admin.
                   Make sure all stakers have withdrawn their tokens before closing.
                 </p>
-                
+
                 {!showCloseConfirm ? (
                   <button
                     onClick={() => setShowCloseConfirm(true)}
@@ -1246,29 +1234,29 @@ export default function StakingAdminPage() {
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
-                    className="h-20 sm:h-24 animate-pulse rounded-xl border border-white/10 bg-[#111118]"
+                    className="h-20 sm:h-24 animate-pulse rounded-xl border border-white/10 bg-[#001229]"
                   />
                 ))}
               </div>
             ) : platformStats ? (
               <>
                 <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="rounded-xl border border-white/10 bg-[#111118] p-4">
+                  <div className="rounded-xl border border-white/10 bg-[#001229] p-4">
                     <p className="text-xs text-white/60">Total Users</p>
                     <p className="mt-2 text-2xl font-bold text-white">{platformStats.totalUsers.toLocaleString()}</p>
                     <p className="mt-1 text-xs text-white/50">{platformStats.activeUsers} active</p>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-[#111118] p-4">
+                  <div className="rounded-xl border border-white/10 bg-[#001229] p-4">
                     <p className="text-xs text-white/60">Active Users (7d)</p>
                     <p className="mt-2 text-2xl font-bold text-white">{platformStats.activeUsers.toLocaleString()}</p>
                     <p className="mt-1 text-xs text-white/50">{platformStats.adminUsers} admins</p>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-[#111118] p-4">
+                  <div className="rounded-xl border border-white/10 bg-[#001229] p-4">
                     <p className="text-xs text-white/60">Total Staked</p>
                     <p className="mt-2 text-2xl font-bold text-white">{platformStats.totalStaked.toFixed(2)} DRMR</p>
                     <p className="mt-1 text-xs text-white/50">{platformStats.totalActivities} activities</p>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-[#111118] p-4">
+                  <div className="rounded-xl border border-white/10 bg-[#001229] p-4">
                     <p className="text-xs text-white/60">Total Activities</p>
                     <p className="mt-2 text-2xl font-bold text-white">{platformStats.totalActivities.toLocaleString()}</p>
                     <p className="mt-1 text-xs text-white/50">All time</p>
@@ -1277,13 +1265,13 @@ export default function StakingAdminPage() {
 
                 {/* Activity Stats */}
                 {platformStats.activityStats.length > 0 && (
-                  <div className="rounded-xl border border-white/10 bg-[#111118] p-6">
+                  <div className="rounded-xl border border-white/10 bg-[#001229] p-6">
                     <h2 className="mb-4 text-lg font-semibold text-white">Activity Breakdown</h2>
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                       {platformStats.activityStats.map((stat) => (
                         <div
                           key={stat.action}
-                          className="rounded-lg border border-white/10 bg-[#0a0a0f] p-3"
+                          className="rounded-lg border border-white/10 bg-[#000d1f] p-3"
                         >
                           <p className="text-xs text-white/60">{stat.action}</p>
                           <p className="mt-1 text-lg font-semibold text-white">{stat.count}</p>
@@ -1294,7 +1282,7 @@ export default function StakingAdminPage() {
                 )}
               </>
             ) : (
-              <div className="rounded-2xl border border-white/10 bg-[#111118] p-6">
+              <div className="rounded-2xl border border-white/10 bg-[#001229] p-6">
                 <p className="text-white/70">No platform stats available</p>
               </div>
             )}
@@ -1304,7 +1292,7 @@ export default function StakingAdminPage() {
         {/* USERS TAB */}
         {activeTab === "users" && (
           <div className="space-y-6">
-            <div className="rounded-xl border border-white/10 bg-[#111118] p-4 sm:p-6">
+            <div className="rounded-xl border border-white/10 bg-[#001229] p-4 sm:p-6">
               <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <h2 className="text-base sm:text-lg font-semibold text-white">Users</h2>
                 <input
@@ -1315,7 +1303,7 @@ export default function StakingAdminPage() {
                     setUsersSearch(e.target.value);
                     setUsersPage(1);
                   }}
-                  className="w-full sm:w-auto rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-2 text-sm text-white placeholder-white/40 focus:border-blue-500/50 focus:outline-none"
+                  className="w-full sm:w-auto rounded-lg border border-white/10 bg-[#000d1f] px-3 py-2 text-sm text-white placeholder-white/40 focus:border-blue-500/50 focus:outline-none"
                 />
               </div>
 
@@ -1324,7 +1312,7 @@ export default function StakingAdminPage() {
                   {[1, 2, 3, 4, 5].map((i) => (
                     <div
                       key={i}
-                      className="h-16 animate-pulse rounded-lg border border-white/10 bg-[#0a0a0f]"
+                      className="h-16 animate-pulse rounded-lg border border-white/10 bg-[#000d1f]"
                     />
                   ))}
                 </div>
@@ -1396,7 +1384,7 @@ export default function StakingAdminPage() {
                                 <div className="flex items-center justify-end gap-1 sm:gap-2 flex-wrap">
                                   <button
                                     onClick={() => setSelectedUser(user)}
-                                    className="rounded-lg border border-white/10 bg-[#0a0a0f] px-2 sm:px-3 py-1 text-[10px] sm:text-xs text-white transition hover:border-blue-500/50"
+                                    className="rounded-lg border border-white/10 bg-[#000d1f] px-2 sm:px-3 py-1 text-[10px] sm:text-xs text-white transition hover:border-blue-500/50"
                                   >
                                     View
                                   </button>
@@ -1404,7 +1392,7 @@ export default function StakingAdminPage() {
                                     <>
                                       <button
                                         onClick={() => handleUpdateUser(user, { isActive: !user.isActive })}
-                                        className="rounded-lg border border-white/10 bg-[#0a0a0f] px-2 sm:px-3 py-1 text-[10px] sm:text-xs text-white transition hover:border-blue-500/50"
+                                        className="rounded-lg border border-white/10 bg-[#000d1f] px-2 sm:px-3 py-1 text-[10px] sm:text-xs text-white transition hover:border-blue-500/50"
                                       >
                                         <span className="hidden sm:inline">{user.isActive ? "Deactivate" : "Activate"}</span>
                                         <span className="sm:hidden">{user.isActive ? "Off" : "On"}</span>
@@ -1436,14 +1424,14 @@ export default function StakingAdminPage() {
                         <button
                           onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
                           disabled={usersPage === 1}
-                          className="rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-1 text-xs text-white transition hover:border-blue-500/50 disabled:opacity-50"
+                          className="rounded-lg border border-white/10 bg-[#000d1f] px-3 py-1 text-xs text-white transition hover:border-blue-500/50 disabled:opacity-50"
                         >
                           Previous
                         </button>
                         <button
                           onClick={() => setUsersPage((p) => Math.min(usersData.pagination.totalPages, p + 1))}
                           disabled={usersPage === usersData.pagination.totalPages}
-                          className="rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-1 text-xs text-white transition hover:border-blue-500/50 disabled:opacity-50"
+                          className="rounded-lg border border-white/10 bg-[#000d1f] px-3 py-1 text-xs text-white transition hover:border-blue-500/50 disabled:opacity-50"
                         >
                           Next
                         </button>
@@ -1501,7 +1489,7 @@ function UserDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-2xl rounded-xl border border-white/10 bg-[#111118] p-6">
+      <div className="w-full max-w-2xl rounded-xl border border-white/10 bg-[#001229] p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-white">User Details</h2>
           <button
@@ -1527,7 +1515,7 @@ function UserDetailModal({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={!onUpdate}
-              className="mt-1 w-full rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-blue-500/50 focus:outline-none disabled:opacity-50"
+              className="mt-1 w-full rounded-lg border border-white/10 bg-[#000d1f] px-3 py-2 text-sm text-white focus:border-blue-500/50 focus:outline-none disabled:opacity-50"
             />
           </div>
 
@@ -1538,7 +1526,7 @@ function UserDetailModal({
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={!onUpdate}
-              className="mt-1 w-full rounded-lg border border-white/10 bg-[#0a0a0f] px-3 py-2 text-sm text-white focus:border-blue-500/50 focus:outline-none disabled:opacity-50"
+              className="mt-1 w-full rounded-lg border border-white/10 bg-[#000d1f] px-3 py-2 text-sm text-white focus:border-blue-500/50 focus:outline-none disabled:opacity-50"
             />
           </div>
 
@@ -1593,7 +1581,7 @@ function UserDetailModal({
           <div className="flex justify-end gap-2 pt-4">
             <button
               onClick={onClose}
-              className="rounded-lg border border-white/10 bg-[#0a0a0f] px-4 py-2 text-sm text-white transition hover:border-blue-500/50"
+              className="rounded-lg border border-white/10 bg-[#000d1f] px-4 py-2 text-sm text-white transition hover:border-blue-500/50"
             >
               {onUpdate ? "Cancel" : "Close"}
             </button>
