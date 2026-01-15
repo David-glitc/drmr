@@ -51,6 +51,7 @@ export default function StakingPage() {
   const [stakingError, setStakingError] = useState<string | null>(null);
   const [stakingSuccess, setStakingSuccess] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<string>("Calculating...");
+  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
 
   // Countdown timer effect
   useEffect(() => {
@@ -85,6 +86,68 @@ export default function StakingPage() {
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2">Staking</h1>
         <p className="text-xs sm:text-sm text-white/60">Stake your tokens to steadily earn rewards</p>
+      </div>
+
+      {/* How it works dropdown */}
+      <div className="rounded-2xl border border-white/10 bg-[#001229] overflow-hidden">
+        <button
+          onClick={() => setIsHowItWorksOpen(!isHowItWorksOpen)}
+          className="w-full flex items-center justify-between p-4 sm:p-6 hover:bg-white/5 transition"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20">
+              <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-white">How it works</h3>
+          </div>
+          <svg
+            className={`h-5 w-5 text-white/60 transition-transform ${isHowItWorksOpen ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {isHowItWorksOpen && (
+          <div className="px-4 sm:px-6 pb-4 sm:pb-6 border-t border-white/10">
+            <ol className="space-y-3 mt-4">
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm font-semibold">
+                  1
+                </span>
+                <p className="text-sm sm:text-base text-white/80 pt-0.5">Connect your Solana wallet</p>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm font-semibold">
+                  2
+                </span>
+                <p className="text-sm sm:text-base text-white/80 pt-0.5">Enter the amount of DRMR you want to stake</p>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm font-semibold">
+                  3
+                </span>
+                <p className="text-sm sm:text-base text-white/80 pt-0.5">Select your lock-up duration (minimum 1 day)</p>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm font-semibold">
+                  4
+                </span>
+                <p className="text-sm sm:text-base text-white/80 pt-0.5">Earn rewards based on your stake duration!</p>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm font-semibold">
+                  5
+                </span>
+                <p className="text-sm sm:text-base text-white/80 pt-0.5">Current APY determines rewards earned while staked</p>
+              </li>
+            </ol>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1fr_480px] overflow-x-hidden">
