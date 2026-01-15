@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/drmr_staking.json`.
  */
 export type DrmrStaking = {
-  "address": "FfmtpodpDxLvyWvNi7B6NmpVx1m2LjLm2wK8jZRaTYvX",
+  "address": "GKv7kHGYrdB8jdPjueV7uHn9zpowF9gcbEHdXJVD9uEp",
   "metadata": {
     "name": "drmrStaking",
     "version": "0.1.0",
@@ -52,14 +52,384 @@ export type DrmrStaking = {
           }
         },
         {
+          "name": "stakeVault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stakingPool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "rewardVault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  119,
+                  97,
+                  114,
+                  100,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stakingPool"
+              }
+            ]
+          }
+        },
+        {
           "name": "admin",
-          "signer": true,
-          "relations": [
-            "stakingPool"
-          ]
+          "docs": [
+            "Any admin can sign to trigger close"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "primaryAdmin",
+          "docs": [
+            "Primary admin receives all tokens and rent (validated against PRIMARY_ADMIN constant)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "drmrMint"
+        },
+        {
+          "name": "primaryAdminTokenAccount",
+          "docs": [
+            "Primary admin's token account - receives all tokens"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "primaryAdmin"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "drmrMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
+    },
+    {
+      "name": "fundRewards",
+      "discriminator": [
+        114,
+        64,
+        163,
+        112,
+        175,
+        167,
+        19,
+        121
+      ],
+      "accounts": [
+        {
+          "name": "stakingPool",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  105,
+                  110,
+                  103,
+                  95,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "docs": [
+            "The admin who is funding the rewards",
+            "Must be the pool admin"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "drmrMint",
+          "docs": [
+            "DRMR mint account"
+          ]
+        },
+        {
+          "name": "adminTokenAccount",
+          "docs": [
+            "Admin's DRMR token account (source)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "admin"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "drmrMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "rewardVault",
+          "docs": [
+            "Reward vault: PDA-owned token account to hold reward tokens"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  119,
+                  97,
+                  114,
+                  100,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stakingPool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "getReward",
@@ -135,43 +505,12 @@ export type DrmrStaking = {
           "signer": true
         },
         {
-          "name": "stakeVault",
-          "docs": [
-            "Stake vault: PDA-owned token account holding staked tokens (source for rewards)"
-          ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115,
-                  116,
-                  97,
-                  107,
-                  101,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stakingPool"
-              }
-            ]
-          }
-        },
-        {
           "name": "rewardVault",
           "docs": [
-            "Reward vault: PDA-owned token account holding reward tokens (destination)",
-            "Rewards are transferred here and can be withdrawn later via withdraw function"
+            "Reward vault: PDA-owned token account holding reward tokens",
+            "IMPORTANT: This vault must be PRE-FUNDED by the admin/treasury",
+            "Rewards are tracked in staker.available_rewards until withdrawn"
           ],
-          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -312,10 +651,6 @@ export type DrmrStaking = {
         },
         {
           "name": "creator",
-          "docs": [
-            "Anyone can create a pool - they pay for the account creation",
-            "But they don't become the admin (trusted_admin is the admin)"
-          ],
           "writable": true,
           "signer": true
         },
@@ -843,10 +1178,7 @@ export type DrmrStaking = {
         {
           "name": "admin",
           "docs": [
-            "The admin who is updating the pool configuration",
-            "Can be either:",
-            "1. The trusted_admin PDA (seeds = [b\"trusted_admin\"])",
-            "2. A regular account that matches pool.admin"
+            "Must be one of the admins in pool.admins (max 3)"
           ],
           "writable": true,
           "signer": true
@@ -854,7 +1186,13 @@ export type DrmrStaking = {
       ],
       "args": [
         {
-          "name": "newAdmin",
+          "name": "addAdmin",
+          "type": {
+            "option": "pubkey"
+          }
+        },
+        {
+          "name": "removeAdmin",
           "type": {
             "option": "pubkey"
           }
@@ -1204,6 +1542,31 @@ export type DrmrStaking = {
       "code": 6013,
       "name": "mathOverflow",
       "msg": "Math overflow"
+    },
+    {
+      "code": 6014,
+      "name": "maxAdminsReached",
+      "msg": "Maximum number of admins (3) reached"
+    },
+    {
+      "code": 6015,
+      "name": "adminAlreadyExists",
+      "msg": "Admin already exists"
+    },
+    {
+      "code": 6016,
+      "name": "cannotRemoveLastAdmin",
+      "msg": "Cannot remove the last admin"
+    },
+    {
+      "code": 6017,
+      "name": "adminNotFound",
+      "msg": "Admin not found"
+    },
+    {
+      "code": 6018,
+      "name": "cannotRemovePrimaryAdmin",
+      "msg": "Cannot remove the primary admin"
     }
   ],
   "types": [
@@ -1212,13 +1575,6 @@ export type DrmrStaking = {
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "pool",
-            "docs": [
-              "Links staker to their staking pool"
-            ],
-            "type": "pubkey"
-          },
           {
             "name": "user",
             "type": "pubkey"
@@ -1242,21 +1598,21 @@ export type DrmrStaking = {
             "docs": [
               "Stake start timestamp"
             ],
-            "type": "i64"
+            "type": "u32"
           },
           {
             "name": "stakeEndTime",
             "docs": [
               "Stake end timestamp"
             ],
-            "type": "i64"
+            "type": "u32"
           },
           {
             "name": "lastClaim",
             "docs": [
               "Last reward claim timestamp"
             ],
-            "type": "i64"
+            "type": "u32"
           },
           {
             "name": "totalRewardsClaimed",
@@ -1288,8 +1644,13 @@ export type DrmrStaking = {
         "kind": "struct",
         "fields": [
           {
-            "name": "admin",
-            "type": "pubkey"
+            "name": "admins",
+            "docs": [
+              "Admins who can manage the pool (max 3)"
+            ],
+            "type": {
+              "vec": "pubkey"
+            }
           },
           {
             "name": "drmrMint",
@@ -1356,14 +1717,14 @@ export type DrmrStaking = {
             "docs": [
               "Pool creation timestamp"
             ],
-            "type": "i64"
+            "type": "u32"
           },
           {
             "name": "lastRewardDistribution",
             "docs": [
               "Last reward distribution timestamp"
             ],
-            "type": "i64"
+            "type": "u32"
           }
         ]
       }

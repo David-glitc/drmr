@@ -30,4 +30,14 @@ pub enum StakingError {
     InsufficientRewards,
     #[msg("Math overflow")]
     MathOverflow,
+    #[msg("Maximum number of admins (3) reached")]
+    MaxAdminsReached,
+    #[msg("Admin already exists")]
+    AdminAlreadyExists,
+    #[msg("Cannot remove the last admin")]
+    CannotRemoveLastAdmin,
+    #[msg("Admin not found")]
+    AdminNotFound,
+    #[msg("Cannot remove the primary admin")]
+    CannotRemovePrimaryAdmin,
 }

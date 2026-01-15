@@ -13,7 +13,7 @@ pub fn stake(
     let pool = &mut ctx.accounts.staking_pool;
     let staker = &mut ctx.accounts.staker;
     let clock = Clock::get()?;
-    let current_time = clock.unix_timestamp;
+    let current_time = clock.unix_timestamp as u32;
 
     // Validate pool is active
     require!(pool.is_active, StakingError::PoolInactive);
@@ -33,7 +33,7 @@ pub fn stake(
         .checked_mul(pool.reward_cycle_seconds)
         .ok_or(StakingError::MathOverflow)?;
     let stake_end_time = current_time
-        .checked_add(stake_duration as i64)
+        .checked_add(stake_duration as u32)
         .ok_or(StakingError::MathOverflow)?;
 
     // Transfer tokens from user to stake vault
@@ -56,7 +56,6 @@ pub fn stake(
 
     if is_first_stake {
         // First stake: Initialize all fields
-        staker.pool = pool.key();
         staker.user = ctx.accounts.user.key();
         // amount = currently active stake (will decrease on unstake)
         staker.amount = stake_amount;

@@ -104,7 +104,8 @@ export default function StakingAdminPage() {
   const [initMaxStakeEpochCycles, setInitMaxStakeEpochCycles] = useState("");
 
   // Form state for manage pool
-  const [newAdmin, setNewAdmin] = useState("");
+  const [addAdmin, setAddAdmin] = useState("");
+  const [removeAdmin, setRemoveAdmin] = useState("");
   const [newStakeEpochCycles, setNewStakeEpochCycles] = useState("");
   const [newRewardCycleSeconds, setNewRewardCycleSeconds] = useState("");
   const [newApyBps, setNewApyBps] = useState("");
@@ -118,16 +119,29 @@ export default function StakingAdminPage() {
   const [usersSearch, setUsersSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  // isVerified = wallet is the admin wallet (required for WRITE access)
-  // passwordVerified = user knows the password (required for READ access)
-  const isVerified = isAdmin;
-
   // Fetch staking pool data
   const { data: stakingPool } = useQuery({
     queryKey: ["staking-pool"],
     queryFn: fetchStakingPool,
     refetchInterval: 30000,
   });
+
+  // isVerified = wallet is an admin wallet (required for WRITE access)
+  // passwordVerified = user knows the password (required for READ access)
+  const isVerified = useMemo(() => {
+    if (!wallet) return false;
+    
+    // Check if wallet is the primary admin
+    if (isAdmin) return true;
+    
+    // Check if wallet is in the pool admins array
+    if (stakingPool?.admins) {
+      const walletAddress = wallet.toBase58();
+      return stakingPool.admins.some(admin => admin.toBase58() === walletAddress);
+    }
+    
+    return false;
+  }, [wallet, isAdmin, stakingPool]);
 
   // Fetch all stakers
   const { data: allStakers, isLoading: isLoadingStakers } = useQuery({
@@ -258,7 +272,7 @@ export default function StakingAdminPage() {
     }
 
     if (!isVerified) {
-      setErrorMessage("Only the designated admin wallet can initialize the pool");
+      setErrorMessage("Only an admin wallet can initialize the pool");
       return;
     }
 
@@ -307,7 +321,7 @@ export default function StakingAdminPage() {
     }
 
     if (!isVerified) {
-      setErrorMessage("Only the designated admin wallet can update pool configuration");
+      setErrorMessage("Only an admin wallet can update pool configuration");
       return;
     }
 
@@ -316,7 +330,8 @@ export default function StakingAdminPage() {
 
     try {
       const tx = await updatePoolConfig(
-        newAdmin || null,
+        addAdmin || null,
+        removeAdmin || null,
         newStakeEpochCycles ? parseInt(newStakeEpochCycles) : null,
         newRewardCycleSeconds ? parseInt(newRewardCycleSeconds) : null,
         newApyBps ? parseInt(newApyBps) : null,
@@ -325,7 +340,8 @@ export default function StakingAdminPage() {
 
       setSuccessMessage(`Pool configuration updated! Transaction: ${tx}`);
 
-      setNewAdmin("");
+      setAddAdmin("");
+      setRemoveAdmin("");
       setNewStakeEpochCycles("");
       setNewRewardCycleSeconds("");
       setNewApyBps("");
@@ -349,7 +365,7 @@ export default function StakingAdminPage() {
     }
 
     if (!isVerified) {
-      setErrorMessage("Only the designated admin wallet can close the pool");
+      setErrorMessage("Only an admin wallet can close the pool");
       return;
     }
 
@@ -471,7 +487,7 @@ export default function StakingAdminPage() {
                   You can view staking metrics and configurations, but cannot modify pool settings.
                 </p>
                 <p className="text-white/50 text-xs mt-2">
-                  Admin Wallet Required: {trustedAdminAddress.slice(0, 8)}...{trustedAdminAddress.slice(-8)}
+                  Admin access required. Your wallet must be listed as an admin in the pool configuration.
                   {wallet && (
                     <> | Your Wallet: {wallet.toBase58().slice(0, 8)}...{wallet.toBase58().slice(-8)}</>
                   )}
@@ -710,9 +726,18 @@ export default function StakingAdminPage() {
               <div className="rounded-2xl border border-white/10 bg-[#001229] p-6">
                 <h2 className="text-lg font-semibold text-white mb-4">Pool Configuration</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-white/60 mb-1">Admin</p>
-                    <p className="text-sm text-white font-mono">{stakingPool.admin.toBase58()}</p>
+                  <div className="md:col-span-2">
+                    <p className="text-xs text-white/60 mb-1">Admins ({stakingPool.admins.length}/3)</p>
+                    <div className="space-y-1">
+                      {stakingPool.admins.map((admin, index) => (
+                        <div key={admin.toBase58()} className="flex items-center gap-2">
+                          <span className={`text-xs px-2 py-0.5 rounded ${index === 0 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/10 text-white/60'}`}>
+                            {index === 0 ? 'Primary' : `Admin ${index + 1}`}
+                          </span>
+                          <p className="text-sm text-white font-mono">{admin.toBase58()}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <div>
                     <p className="text-xs text-white/60 mb-1">DRMR Mint</p>
@@ -776,15 +801,64 @@ export default function StakingAdminPage() {
                 <h2 className="text-lg font-semibold text-white mb-4">Update Configuration</h2>
 
                 <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-white/70 mb-2 block">New Admin Address (optional)</label>
-                    <input
-                      type="text"
-                      value={newAdmin}
-                      onChange={(e) => setNewAdmin(e.target.value)}
-                      placeholder="Leave empty to keep current admin"
-                      className="w-full rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20"
-                    />
+                  {/* Admin Management Section */}
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-4">
+                    <h3 className="text-sm font-semibold text-white/80">Admin Management</h3>
+                    
+                    {/* Current Admins Display */}
+                    <div>
+                      <p className="text-xs text-white/60 mb-2">Current Admins ({stakingPool.admins.length}/3)</p>
+                      <div className="space-y-1">
+                        {stakingPool.admins.map((admin, index) => (
+                          <div key={admin.toBase58()} className="flex items-center gap-2 text-xs">
+                            <span className={`px-2 py-0.5 rounded ${index === 0 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/10 text-white/60'}`}>
+                              {index === 0 ? 'Primary' : `#${index + 1}`}
+                            </span>
+                            <span className="text-white/80 font-mono truncate">{admin.toBase58()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Add Admin */}
+                    <div>
+                      <label className="text-sm text-white/70 mb-2 block">Add New Admin (optional)</label>
+                      <input
+                        type="text"
+                        value={addAdmin}
+                        onChange={(e) => setAddAdmin(e.target.value)}
+                        placeholder={stakingPool.admins.length >= 3 ? "Maximum admins reached (3)" : "Enter wallet address to add as admin"}
+                        disabled={stakingPool.admins.length >= 3}
+                        className="w-full rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      {stakingPool.admins.length < 3 && (
+                        <p className="text-xs text-white/50 mt-1">Can add {3 - stakingPool.admins.length} more admin(s)</p>
+                      )}
+                    </div>
+
+                    {/* Remove Admin Dropdown */}
+                    <div>
+                      <label className="text-sm text-white/70 mb-2 block">Remove Admin (optional)</label>
+                      <select
+                        value={removeAdmin}
+                        onChange={(e) => setRemoveAdmin(e.target.value)}
+                        disabled={stakingPool.admins.length <= 1}
+                        className="w-full rounded-xl border border-white/10 bg-[#000d1f] px-4 py-3 text-sm text-white outline-none focus:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="">Select admin to remove...</option>
+                        {stakingPool.admins.slice(1).map((admin, index) => (
+                          <option key={admin.toBase58()} value={admin.toBase58()}>
+                            Admin #{index + 2}: {admin.toBase58().slice(0, 8)}...{admin.toBase58().slice(-8)}
+                          </option>
+                        ))}
+                      </select>
+                      {stakingPool.admins.length <= 1 && (
+                        <p className="text-xs text-yellow-400 mt-1">Cannot remove the only admin</p>
+                      )}
+                      {stakingPool.admins.length > 1 && (
+                        <p className="text-xs text-white/50 mt-1">Primary admin cannot be removed</p>
+                      )}
+                    </div>
                   </div>
 
                   <div>
@@ -882,7 +956,7 @@ export default function StakingAdminPage() {
                   </button>
                   {!isVerified && (
                     <p className="text-xs text-yellow-400 mt-2">
-                      Only the designated admin wallet can update pool configuration
+                      Only an admin wallet can update pool configuration
                     </p>
                   )}
                 </div>
@@ -991,9 +1065,10 @@ export default function StakingAdminPage() {
                           return;
                         }
 
-                        const drmrMint = process.env.NEXT_PUBLIC_DRMR_MINT;
+                        // Use the mint from the initialized pool
+                        const drmrMint = stakingPool?.drmrMint?.toBase58();
                         if (!drmrMint) {
-                          setErrorMessage("DRMR mint address not configured");
+                          setErrorMessage("Staking pool not initialized or mint not found");
                           return;
                         }
 
@@ -1007,7 +1082,7 @@ export default function StakingAdminPage() {
                           setErrorMessage(err.message || "Failed to fund rewards");
                         }
                       }}
-                      disabled={isLoading || !isVerified || !fundAmount}
+                      disabled={isLoading || !isVerified || !fundAmount || !stakingPool}
                       className="w-full rounded-xl border border-green-500/50 bg-green-500/20 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isLoading ? "Funding..." : `Fund ${fundAmount || "0"} DRMR`}
@@ -1015,7 +1090,7 @@ export default function StakingAdminPage() {
 
                     {!isVerified && (
                       <p className="text-xs text-yellow-400 text-center">
-                        Only the designated admin wallet can fund rewards
+                        Only an admin wallet can fund rewards
                       </p>
                     )}
                   </div>
@@ -1146,7 +1221,7 @@ export default function StakingAdminPage() {
                   </button>
                   {!isVerified && (
                     <p className="text-xs text-yellow-400 mt-2">
-                      Only the designated admin wallet can initialize the pool
+                      Only an admin wallet can initialize the pool
                     </p>
                   )}
                 </div>
@@ -1214,7 +1289,7 @@ export default function StakingAdminPage() {
                       </button>
                       {!isVerified && (
                         <p className="text-xs text-yellow-400 mt-2 text-center">
-                          Only the designated admin wallet can close the pool
+                          Only an admin wallet can close the pool
                         </p>
                       )}
                     </div>

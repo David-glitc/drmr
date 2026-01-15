@@ -88,7 +88,7 @@ pub fn get_reward(ctx: Context<GetReward>) -> Result<()> {
     let pool = &ctx.accounts.staking_pool;
     let staker = &mut ctx.accounts.staker;
     let clock = Clock::get()?;
-    let current_time = clock.unix_timestamp;
+    let current_time = clock.unix_timestamp as u32;
 
     // Validate pool is active
     require!(pool.is_active, StakingError::PoolInactive);
@@ -190,7 +190,6 @@ pub struct GetReward<'info> {
         mut,
         seeds = [b"staker", staking_pool.key().as_ref(), user.key().as_ref()],
         bump,
-        constraint = staker.pool == staking_pool.key() @ StakingError::Unauthorized,
         constraint = staker.user == user.key() @ StakingError::Unauthorized
     )]
     pub staker: Account<'info, Staker>,

@@ -4,7 +4,8 @@ use crate::error::StakingError;
 
 pub fn update_pool_config(
     ctx: Context<UpdateConfig>,
-    new_admin: Option<Pubkey>,
+    add_admin: Option<Pubkey>,
+    remove_admin: Option<Pubkey>,
     new_stake_epoch_cycles: Option<u64>,
     new_reward_cycle_seconds: Option<u64>,
     new_apy_bps: Option<u16>,
@@ -13,19 +14,31 @@ pub fn update_pool_config(
     let pool = &mut ctx.accounts.staking_pool;
     let admin_signer = ctx.accounts.admin.key();
 
-    // Validate admin: Check if signer is the current admin
-    // Admin can be either:
-    // 1. A PDA (trusted_admin) - we check if the signer key matches pool.admin
-    // 2. A regular account - we check if the signer key matches pool.admin
+    // Validate admin: Check if signer is one of the current admins
     require!(
-        admin_signer == pool.admin,
+        pool.admins.contains(&admin_signer),
         StakingError::Unauthorized
     );
 
-    // Update admin if provided
-    if let Some(admin) = new_admin {
-        pool.admin = admin;
-        msg!("Admin updated to: {}", admin);
+    // Add new admin if provided (max 3 admins)
+    if let Some(admin) = add_admin {
+        require!(pool.admins.len() < 3, StakingError::MaxAdminsReached);
+        require!(!pool.admins.contains(&admin), StakingError::AdminAlreadyExists);
+        pool.admins.push(admin);
+        msg!("Admin added: {}", admin);
+    }
+
+    // Remove admin if provided (must keep at least 1 admin, cannot remove primary admin)
+    if let Some(admin) = remove_admin {
+        require!(pool.admins.len() > 1, StakingError::CannotRemoveLastAdmin);
+        require!(pool.admins.contains(&admin), StakingError::AdminNotFound);
+        // Primary admin (first admin at index 0) cannot be removed
+        require!(
+            pool.admins.first() != Some(&admin),
+            StakingError::CannotRemovePrimaryAdmin
+        );
+        pool.admins.retain(|a| *a != admin);
+        msg!("Admin removed: {}", admin);
     }
 
     // Update stake_epoch_cycles if provided
@@ -65,15 +78,10 @@ pub struct UpdateConfig<'info> {
         mut,
         seeds = [b"staking_pool"],
         bump,
-        // Admin can be either a PDA or a regular account
-        // We validate this in the function by checking if the signer matches the admin
     )]
     pub staking_pool: Account<'info, StakingPool>,
 
-    /// The admin who is updating the pool configuration
-    /// Can be either:
-    /// 1. The trusted_admin PDA (seeds = [b"trusted_admin"])
-    /// 2. A regular account that matches pool.admin
+    /// Must be one of the admins in pool.admins (max 3)
     #[account(mut)]
     pub admin: Signer<'info>,
 }

@@ -7,7 +7,7 @@ pub mod config;
 pub mod global;
 pub mod error;
 
-declare_id!("FfmtpodpDxLvyWvNi7B6NmpVx1m2LjLm2wK8jZRaTYvX");
+declare_id!("GKv7kHGYrdB8jdPjueV7uHn9zpowF9gcbEHdXJVD9uEp");
 
 #[program]
 pub mod drmr_staking {
@@ -35,7 +35,8 @@ pub mod drmr_staking {
 
     pub fn update_pool_config(
         ctx: Context<UpdateConfig>,
-        new_admin: Option<Pubkey>,
+        add_admin: Option<Pubkey>,
+        remove_admin: Option<Pubkey>,
         new_stake_epoch_cycles: Option<u64>,
         new_reward_cycle_seconds: Option<u64>,
         new_apy_bps: Option<u16>,
@@ -43,7 +44,8 @@ pub mod drmr_staking {
     ) -> Result<()> {
         actions::update_pool_config(
             ctx,
-            new_admin,
+            add_admin,
+            remove_admin,
             new_stake_epoch_cycles,
             new_reward_cycle_seconds,
             new_apy_bps,
@@ -51,18 +53,12 @@ pub mod drmr_staking {
         )
     }
 
+    pub fn fund_rewards(ctx: Context<FundRewards>, amount: u64) -> Result<()>{
+        actions::fund_rewards(ctx, amount)
+    }
+
     pub fn close(ctx: Context<Close>) -> Result<()> {
         actions::close(ctx)
-    }
-
-    pub fn close_token(ctx: Context<CloseToken>) -> Result<()> {
-        actions::close_token(ctx)
-    }
-
-    /// Fund the reward vault with tokens (admin only)
-    /// Must be called to pre-fund rewards before users can claim
-    pub fn fund_rewards(ctx: Context<FundRewards>, amount: u64) -> Result<()> {
-        actions::fund_rewards(ctx, amount)
     }
 }
 

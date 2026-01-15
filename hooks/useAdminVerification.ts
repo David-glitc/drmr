@@ -32,7 +32,7 @@ export function useAdminVerification() {
     }
   }, [wallet]);
 
-  // Verify admin status by checking pool admin
+  // Verify admin status by checking pool admins
   const verifyAdmin = async (): Promise<boolean> => {
     if (!wallet) return false;
 
@@ -43,7 +43,7 @@ export function useAdminVerification() {
       return true;
     }
 
-    // Second check: Verify against pool admin (if pool exists)
+    // Second check: Verify against pool admins array (if pool exists)
     try {
       const pool = await fetchStakingPool();
       if (!pool) {
@@ -51,8 +51,9 @@ export function useAdminVerification() {
         return walletAddress === TRUSTED_ADMIN_ADDRESS;
       }
 
-      const poolAdminAddress = pool.admin.toBase58();
-      return walletAddress === poolAdminAddress;
+      // Check if wallet is in the admins array
+      const isPoolAdmin = pool.admins.some(admin => admin.toBase58() === walletAddress);
+      return isPoolAdmin;
     } catch {
       // On error, still check if it's trusted admin
       return walletAddress === TRUSTED_ADMIN_ADDRESS;

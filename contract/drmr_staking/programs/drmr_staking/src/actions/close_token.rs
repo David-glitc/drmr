@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer, CloseAccount};
 use anchor_spl::associated_token::AssociatedToken;
+use crate::config::StakingPool;
 use crate::error::StakingError;
 
 /// Helper function to transfer funds and close token vaults
@@ -96,15 +97,9 @@ pub fn close_token_vaults<'info>(
 /// Useful for closing orphaned vaults after staking_pool has been closed
 /// Only the trusted admin can close the vaults
 pub fn close_token(ctx: Context<CloseToken>) -> Result<()> {
-    // Use the same trusted admin as initialize
-    // let trusted_admin = Pubkey::from_str_const("9ptLw6PHCEhaJw5kEjpQ6eTDwsPoqLM3E64gtzo2Fe8");
-    // require!(
-    //     ctx.accounts.admin.key() == trusted_admin,
-    //     StakingError::Unauthorized
-    // );
-    
+    let staking_pool = &ctx.accounts.staking_pool;
     // Derive staking_pool PDA key for seed validation (account doesn't need to exist)
-    let staking_pool_key = ctx.accounts.staking_pool_key.key();
+    let staking_pool_key = staking_pool.to_account_info();
     
     // Validate that both vaults use the same mint and it matches the provided mint
     require!(
@@ -119,41 +114,25 @@ pub fn close_token(ctx: Context<CloseToken>) -> Result<()> {
         ctx.accounts.stake_vault.mint == ctx.accounts.reward_vault.mint,
         StakingError::InvalidMint
     );
-    
-    msg!("=== CLOSING TOKEN VAULTS ===");
-    msg!("Admin: {}", ctx.accounts.admin.key());
-    msg!("Staking Pool Key (derived): {}", staking_pool_key);
-    msg!("Stake Vault: {}", ctx.accounts.stake_vault.key());
-    msg!("Reward Vault: {}", ctx.accounts.reward_vault.key());
-    msg!("Admin Token Account (Destination): {}", ctx.accounts.admin_token_account.key());
-    msg!("---------------------------------");
-    msg!("Initial Stake Vault Balance: {} tokens", ctx.accounts.stake_vault.amount);
-    msg!("Initial Reward Vault Balance: {} tokens", ctx.accounts.reward_vault.amount);
-    msg!("---------------------------------");
-    
+      
     // Get the program PDA account info for signing (owner of the vaults)
-    let program_pda_info = ctx.accounts.staking_pool_key.to_account_info();
+    let program_pda_info = staking_pool_key;
     
     // Use the helper function to transfer funds and close accounts
-    let (stake_balance, reward_balance) = close_token_vaults(
+    close_token_vaults(
         &ctx.accounts.stake_vault,
         &ctx.accounts.reward_vault,
         &ctx.accounts.admin_token_account,
         &ctx.accounts.admin.to_account_info(),
         &program_pda_info,
-        &staking_pool_key,
-        ctx.bumps.staking_pool_key, // Bump for staking_pool PDA
+        &staking_pool.key(),
+        ctx.bumps.staking_pool, // Bump for staking_pool PDA
         ctx.bumps.stake_vault,
         ctx.bumps.reward_vault,
         &ctx.accounts.token_program.to_account_info(),
         true, // Close accounts
     )?;
     
-    // Summary
-    msg!("=== CLOSE SUMMARY ===");
-    msg!("Stake vault → Admin: {} tokens", stake_balance);
-    msg!("Reward vault → Admin: {} tokens", reward_balance);
-    msg!("Total transferred: {} tokens", stake_balance.saturating_add(reward_balance));
     msg!("Token vaults closed successfully");
     
     Ok(())
@@ -161,19 +140,16 @@ pub fn close_token(ctx: Context<CloseToken>) -> Result<()> {
 
 #[derive(Accounts)]
 pub struct CloseToken<'info> {
-    /// Staking pool PDA key (derived, account doesn't need to exist)
-    /// Used only for seed validation to derive vault PDAs
-    /// CHECK: This is just the PDA key, not the account itself
     #[account(
         seeds = [b"staking_pool"],
         bump
     )]
-    pub staking_pool_key: AccountInfo<'info>,
+    pub staking_pool: Account<'info, StakingPool>,
     
     /// Stake vault: PDA-owned token account holding staked tokens
     #[account(
         mut,
-        seeds = [b"stake_vault", staking_pool_key.key().as_ref()],
+        seeds = [b"stake_vault", staking_pool.key().as_ref()],
         bump
     )]
     pub stake_vault: Account<'info, TokenAccount>,
@@ -181,7 +157,7 @@ pub struct CloseToken<'info> {
     /// Reward vault: PDA-owned token account holding reward tokens
     #[account(
         mut,
-        seeds = [b"reward_vault", staking_pool_key.key().as_ref()],
+        seeds = [b"reward_vault", staking_pool.key().as_ref()],
         bump
     )]
     pub reward_vault: Account<'info, TokenAccount>,

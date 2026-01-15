@@ -19,7 +19,7 @@ import {
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
 export interface StakingPoolData {
-  admin: PublicKey;
+  admins: PublicKey[];
   drmrMint: PublicKey;
   stakeEpochCycles: BN;
   rewardCycleSeconds: BN;
@@ -34,7 +34,6 @@ export interface StakingPoolData {
 }
 
 export interface StakerData {
-  pool: PublicKey;
   user: PublicKey;
   amount: BN;
   stakePeriods: number;
@@ -63,7 +62,7 @@ export function useDrmrStaking() {
       const poolAccount = await program.account.stakingPool.fetch(stakingPoolPDA);
       
       return {
-        admin: poolAccount.admin,
+        admins: poolAccount.admins,
         drmrMint: poolAccount.drmrMint,
         stakeEpochCycles: poolAccount.stakeEpochCycles,
         rewardCycleSeconds: poolAccount.rewardCycleSeconds,
@@ -102,7 +101,6 @@ export function useDrmrStaking() {
       const stakerAccount = await program.account.staker.fetch(stakerPDA);
       
       return {
-        pool: stakerAccount.pool,
         user: stakerAccount.user,
         amount: stakerAccount.amount,
         stakePeriods: stakerAccount.stakePeriods,
@@ -132,22 +130,21 @@ export function useDrmrStaking() {
       // Fetch all staker accounts and filter by pool
       const allStakerAccounts = await program.account.staker.all();
 
-      // Filter stakers that belong to this pool and map to our format
-      return allStakerAccounts
-        .filter((account) => account.account.pool.equals(stakingPoolPDA))
-        .map((account) => ({
-          publicKey: account.publicKey,
-          pool: account.account.pool,
-          user: account.account.user,
-          amount: account.account.amount,
-          stakePeriods: account.account.stakePeriods,
-          stakedAt: account.account.stakedAt,
-          stakeEndTime: account.account.stakeEndTime,
-          lastClaim: account.account.lastClaim,
-          totalRewardsClaimed: account.account.totalRewardsClaimed,
-          availableRewards: account.account.availableRewards,
-          totalTokenStaked: account.account.totalTokenStaked,
-        }));
+      // Map staker accounts to our format
+      // Note: All staker PDAs are derived from [b"staker", stakingPool, user]
+      // so they're inherently tied to this pool
+      return allStakerAccounts.map((account) => ({
+        publicKey: account.publicKey,
+        user: account.account.user,
+        amount: account.account.amount,
+        stakePeriods: account.account.stakePeriods,
+        stakedAt: account.account.stakedAt,
+        stakeEndTime: account.account.stakeEndTime,
+        lastClaim: account.account.lastClaim,
+        totalRewardsClaimed: account.account.totalRewardsClaimed,
+        availableRewards: account.account.availableRewards,
+        totalTokenStaked: account.account.totalTokenStaked,
+      }));
     } catch (err) {
       console.error("Error fetching all stakers:", err);
       return [];
@@ -404,7 +401,8 @@ export function useDrmrStaking() {
 
   // Update pool configuration (admin only)
   const updatePoolConfig = useCallback(async (
-    newAdmin: string | null,
+    addAdmin: string | null,
+    removeAdmin: string | null,
     newStakeEpochCycles: number | null,
     newRewardCycleSeconds: number | null,
     newApyBps: number | null,
@@ -414,28 +412,27 @@ export function useDrmrStaking() {
       throw new Error("Wallet not connected");
     }
 
-    // Verify wallet is the admin
+    // Verify wallet is an admin
     const TRUSTED_ADMIN_ADDRESS = "9ptLw6PHCEhaJw5kEjpQ6eTDwsPoqLM3E64gtzo2Fe8";
     const walletAddress = wallet.toBase58();
     
-    // Check if wallet matches trusted admin
+    // Check if wallet matches trusted admin or is in pool admins list
     if (walletAddress !== TRUSTED_ADMIN_ADDRESS) {
-      // Also check pool admin if pool exists
       try {
         const pool = await fetchStakingPool();
         if (pool) {
-          const poolAdminAddress = pool.admin.toBase58();
-          if (walletAddress !== poolAdminAddress) {
-            throw new Error("Only the designated admin wallet can update pool configuration");
+          const isPoolAdmin = pool.admins.some(admin => admin.toBase58() === walletAddress);
+          if (!isPoolAdmin) {
+            throw new Error("Only an admin wallet can update pool configuration");
           }
         } else {
-          throw new Error("Only the designated admin wallet can update pool configuration");
+          throw new Error("Only an admin wallet can update pool configuration");
         }
       } catch (err) {
         if (err instanceof Error && err.message.includes("admin")) {
           throw err;
         }
-        throw new Error("Only the designated admin wallet can update pool configuration");
+        throw new Error("Only an admin wallet can update pool configuration");
       }
     }
 
@@ -447,7 +444,8 @@ export function useDrmrStaking() {
 
       const tx = await program.methods
         .updatePoolConfig(
-          newAdmin ? new PublicKey(newAdmin) : null,
+          addAdmin ? new PublicKey(addAdmin) : null,
+          removeAdmin ? new PublicKey(removeAdmin) : null,
           newStakeEpochCycles ? new BN(newStakeEpochCycles) : null,
           newRewardCycleSeconds ? new BN(newRewardCycleSeconds) : null,
           newApyBps || null,
@@ -526,28 +524,27 @@ export function useDrmrStaking() {
       throw new Error("Wallet not connected");
     }
 
-    // Verify wallet is the admin
+    // Verify wallet is an admin
     const TRUSTED_ADMIN_ADDRESS = "9ptLw6PHCEhaJw5kEjpQ6eTDwsPoqLM3E64gtzo2Fe8";
     const walletAddress = wallet.toBase58();
     
-    // Check if wallet matches trusted admin
+    // Check if wallet matches trusted admin or is in pool admins list
     if (walletAddress !== TRUSTED_ADMIN_ADDRESS) {
-      // Also check pool admin if pool exists
       try {
         const pool = await fetchStakingPool();
         if (pool) {
-          const poolAdminAddress = pool.admin.toBase58();
-          if (walletAddress !== poolAdminAddress) {
-            throw new Error("Only the designated admin wallet can close the pool");
+          const isPoolAdmin = pool.admins.some(admin => admin.toBase58() === walletAddress);
+          if (!isPoolAdmin) {
+            throw new Error("Only an admin wallet can close the pool");
           }
         } else {
-          throw new Error("Only the designated admin wallet can close the pool");
+          throw new Error("Only an admin wallet can close the pool");
         }
       } catch (err) {
         if (err instanceof Error && err.message.includes("admin")) {
           throw err;
         }
-        throw new Error("Only the designated admin wallet can close the pool");
+        throw new Error("Only an admin wallet can close the pool");
       }
     }
 
@@ -585,7 +582,7 @@ export function useDrmrStaking() {
       throw new Error("Wallet not connected");
     }
 
-    // Verify wallet is the admin
+    // Verify wallet is an admin
     const TRUSTED_ADMIN_ADDRESS = "9ptLw6PHCEhaJw5kEjpQ6eTDwsPoqLM3E64gtzo2Fe8";
     const walletAddress = wallet.toBase58();
     
@@ -593,18 +590,18 @@ export function useDrmrStaking() {
       try {
         const pool = await fetchStakingPool();
         if (pool) {
-          const poolAdminAddress = pool.admin.toBase58();
-          if (walletAddress !== poolAdminAddress) {
-            throw new Error("Only the designated admin wallet can fund rewards");
+          const isPoolAdmin = pool.admins.some(admin => admin.toBase58() === walletAddress);
+          if (!isPoolAdmin) {
+            throw new Error("Only an admin wallet can fund rewards");
           }
         } else {
-          throw new Error("Only the designated admin wallet can fund rewards");
+          throw new Error("Only an admin wallet can fund rewards");
         }
       } catch (err) {
         if (err instanceof Error && err.message.includes("admin")) {
           throw err;
         }
-        throw new Error("Only the designated admin wallet can fund rewards");
+        throw new Error("Only an admin wallet can fund rewards");
       }
     }
 

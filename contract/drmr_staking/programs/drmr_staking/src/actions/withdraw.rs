@@ -73,7 +73,6 @@ pub struct Withdraw<'info> {
         mut,
         seeds = [b"staker", staking_pool.key().as_ref(), user.key().as_ref()],
         bump,
-        constraint = staker.pool == staking_pool.key() @ StakingError::Unauthorized,
         constraint = staker.user == user.key() @ StakingError::Unauthorized
     )]
     pub staker: Account<'info, Staker>,

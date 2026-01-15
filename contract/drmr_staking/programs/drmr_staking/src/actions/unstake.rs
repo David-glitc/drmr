@@ -6,7 +6,7 @@ use crate::error::StakingError;
 
 pub fn unstake(ctx: Context<Unstake>, unstake_amount: u64) -> Result<()> {
     let clock = Clock::get()?;
-    let current_time = clock.unix_timestamp;
+    let current_time = clock.unix_timestamp as u32;
 
     // Get account info before mutable borrows
     let staking_pool_account_info = ctx.accounts.staking_pool.to_account_info();
@@ -87,7 +87,6 @@ pub struct Unstake<'info> {
         mut,
         seeds = [b"staker", staking_pool.key().as_ref(), user.key().as_ref()],
         bump,
-        constraint = staker.pool == staking_pool.key() @ StakingError::Unauthorized,
         constraint = staker.user == user.key() @ StakingError::Unauthorized
     )]
     pub staker: Account<'info, Staker>,

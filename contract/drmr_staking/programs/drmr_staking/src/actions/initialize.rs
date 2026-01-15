@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Token, TokenAccount};
-use crate::config::StakingPool;
+use anchor_spl::token::{Token, Mint, TokenAccount};
+use crate::config::{StakingPool, PRIMARY_ADMIN};
 
+#[inline(never)]
 pub fn initialize(
     ctx: Context<Initialize>, 
     apy_bps: u16,
@@ -12,20 +13,16 @@ pub fn initialize(
     let clock = Clock::get()?;
     let current_time = clock.unix_timestamp;
     
-    
-    let trusted_admin = Pubkey::from_str_const("9ptLw6PHCEhaJw5kEjpQ6eTDwsPoqLM3E64gtzo2Fe8");
-    // Set the trusted admin PDA as the pool admin (not the creator)
+    // Set the primary admin as the first pool admin (not the creator)
     // The creator pays for pool creation but doesn't become admin
-    pool.admin = trusted_admin;
+    // Primary admin cannot be removed and receives all funds on close
+    // Max 3 admins can be set
+    pool.admins = vec![PRIMARY_ADMIN];
 
     // Validate and set mint address
     // TODO: Add proper validation to ensure it's a valid SPL token mint account
     pool.drmr_mint = ctx.accounts.drmr_mint.key();
     
-    // Stake and reward vaults are automatically created by Anchor's init constraint
-    // with token::mint and token::authority. They are PDA-owned by staking_pool.
-    msg!("Stake vault created: {}", ctx.accounts.stake_vault.key());
-    msg!("Reward vault created: {}", ctx.accounts.reward_vault.key());
     
     // Maximum allowed epoch cycles for staking lock-up periods
     pool.stake_epoch_cycles = max_stake_epoch_cycles;
@@ -40,10 +37,10 @@ pub fn initialize(
     pool.total_stakers = 0;
     pool.total_rewards_distributed = 0;
     pool.is_active = true;
-    pool.created_at = current_time;
+    pool.created_at = current_time as u32;
     // making this to current time due to initialization so we can track the progress
     // Could also be zero as well
-    pool.last_reward_distribution = current_time;
+    pool.last_reward_distribution = current_time as u32;
     msg!("Staking pool initialized");
     Ok(())
 }
@@ -81,14 +78,11 @@ pub struct Initialize<'info> {
     )]
     pub reward_vault: Account<'info, TokenAccount>,
     
-    /// Anyone can create a pool - they pay for the account creation
-    /// But they don't become the admin (trusted_admin is the admin)
     #[account(mut)]
     pub creator: Signer<'info>,
     
     /// The DRMR mint account (validated in function)
-    /// CHECK: Should verify it's a valid SPL token mint account
-    pub drmr_mint: AccountInfo<'info>,
+    pub drmr_mint: Account<'info, Mint>,
     
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,

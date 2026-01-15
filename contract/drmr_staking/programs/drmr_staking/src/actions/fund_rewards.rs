@@ -40,7 +40,7 @@ pub struct FundRewards<'info> {
         seeds = [b"staking_pool"],
         bump,
         constraint = staking_pool.is_active @ StakingError::PoolInactive,
-        constraint = staking_pool.admin == admin.key() @ StakingError::Unauthorized
+        constraint = staking_pool.admins.contains(&admin.key()) @ StakingError::Unauthorized
     )]
     pub staking_pool: Account<'info, StakingPool>,
     

@@ -9,7 +9,7 @@ crate-type = ["cdylib", "lib"]
 name = "drmr_staking"
 
 [features]
-default = []
+default = ["no-log-ix-name"]  # Enable by default for smaller binary
 cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []
@@ -19,11 +19,9 @@ anchor-debug = []
 custom-heap = []
 custom-panic = []
 
-
 [dependencies]
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] } 
-anchor-spl = { version = "0.32.1", features = ["associated_token"] }
-spl-token = "9.0.0"
+anchor-spl = { version = "0.32.1", features = ["associated_token", "token"] }
 
 
 [lints.rust]

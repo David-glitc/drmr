@@ -14,7 +14,7 @@ interface AnchorWallet {
 
 // Program ID from your contract
 export const DRMR_STAKING_PROGRAM_ID = new PublicKey(
-  "FfmtpodpDxLvyWvNi7B6NmpVx1m2LjLm2wK8jZRaTYvX"
+  "GKv7kHGYrdB8jdPjueV7uHn9zpowF9gcbEHdXJVD9uEp"
 );
 
 // PDA seeds
