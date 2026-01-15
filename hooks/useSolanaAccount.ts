@@ -24,7 +24,7 @@ export function useSolanaAccount(address: string | null) {
         console.log("[useSolanaAccount] Connection endpoint:", maskedEndpoint);
         const publicKey = new PublicKey(address);
         console.log("[useSolanaAccount] PublicKey created:", publicKey.toBase58());
-        
+
         const [slot, balanceLamports, accountInfo] = await Promise.all([
           connection.getSlot().catch((err) => {
             console.error("[useSolanaAccount] Error getting slot:", err);
@@ -41,7 +41,7 @@ export function useSolanaAccount(address: string | null) {
         ]);
 
         const balanceSol = balanceLamports / LAMPORTS_PER_SOL;
-        
+
         console.log("[useSolanaAccount] Balance retrieved:", {
           slot,
           balanceLamports,
@@ -67,18 +67,18 @@ export function useSolanaAccount(address: string | null) {
           name: error?.name,
           endpoint: (connection as any)._rpcEndpoint || "unknown",
         });
-        
+
         // Provide helpful error message for 403 errors
         if (error?.message?.includes("403") || error?.code === 403) {
           console.error("[useSolanaAccount] 403 Forbidden Error - The RPC endpoint is blocking requests.");
           console.error("[useSolanaAccount] Solution: Set NEXT_PUBLIC_SOLANA_RPC_DEVNET or NEXT_PUBLIC_SOLANA_RPC_MAINNET in your .env file with a custom RPC endpoint (e.g., Helius, QuickNode, or Alchemy)");
         }
-        
+
         throw error;
       }
     },
+    staleTime: 300000, // 5 minutes
+    refetchInterval: 300000, // 5 minutes
   });
 }
-
-
 

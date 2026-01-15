@@ -29,17 +29,17 @@ export function useEnhancedAccount() {
     queryKey: ["enhanced-account", walletAddress, network],
     queryFn: async () => {
       if (!walletAddress) return null;
-      
+
       return onChainFetcher.fetchAccountInfo(connection, walletAddress, {
         cache: true,
-        cacheTTL: 15000,
+        cacheTTL: 300000,
         retries: 3,
       });
     },
     enabled: Boolean(walletAddress),
     refetchInterval: autoRefresh ? refreshInterval : false,
-    staleTime: 10000, // Consider data stale after 10s
-    gcTime: 60000, // Keep in cache for 60s
+    staleTime: 300000, // Consider data stale after 5 minutes
+    gcTime: 600000, // Keep in cache for 10 minutes
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });

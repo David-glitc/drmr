@@ -25,8 +25,8 @@ export {
   isConnectedAtom,
   hasWalletAtom,
   shouldRefreshAtom,
+  explorerAtom,
+  activePoolAtom,
+  poolConfigAtom,
+  estimatedRewardsAtom,
 } from "./atoms";
-
-// Legacy exports for backward compatibility
-export { activePoolAtom, poolConfigAtom, estimatedRewardsAtom } from "../state";
-

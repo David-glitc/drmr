@@ -16,8 +16,8 @@ export class AnalyticsService {
 
     return {
       heroStats: [
-        { label: "Total Value Locked", value: "$42.8M", change: "+4.2% WoW" },
-        { label: "Rewards Distributed", value: "$1.9M", change: "+12% MoM" },
+        { label: "Total Value Locked", value: "42.8M DRMR", change: "+4.2% WoW" },
+        { label: "Rewards Distributed", value: "1.9M DRMR", change: "+12% MoM" },
         { label: "Wallets Connected", value: "1,284", change: "+180 in 24h" },
       ],
       tvlSeries: [

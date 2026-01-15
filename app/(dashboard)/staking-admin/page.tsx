@@ -1225,67 +1225,62 @@ export default function StakingAdminPage() {
           </div>
         )}
 
-        {/* PLATFORM STATS TAB */}
         {activeTab === "platform-stats" && (
           <div className="space-y-6">
-            {/* Stats Overview */}
-            {statsLoading ? (
-              <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="h-20 sm:h-24 animate-pulse rounded-xl border border-white/10 bg-[#001229]"
-                  />
-                ))}
+            {/* Smart Contract Stats (Primary Source of Truth) */}
+            <div className="rounded-2xl border border-blue-500/30 bg-blue-500/10 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h2 className="text-lg font-semibold text-white">Smart Contract Statistics</h2>
+                <span className="text-xs text-blue-400 bg-blue-500/20 px-2 py-0.5 rounded-full border border-blue-500/30">Live On-Chain Data</span>
               </div>
-            ) : platformStats ? (
-              <>
-                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="rounded-xl border border-white/10 bg-[#001229] p-4">
-                    <p className="text-xs text-white/60">Total Users</p>
-                    <p className="mt-2 text-2xl font-bold text-white">{platformStats.totalUsers.toLocaleString()}</p>
-                    <p className="mt-1 text-xs text-white/50">{platformStats.activeUsers} active</p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-[#001229] p-4">
-                    <p className="text-xs text-white/60">Active Users (7d)</p>
-                    <p className="mt-2 text-2xl font-bold text-white">{platformStats.activeUsers.toLocaleString()}</p>
-                    <p className="mt-1 text-xs text-white/50">{platformStats.adminUsers} admins</p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-[#001229] p-4">
+
+              {stakingPool ? (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {/* Total Staked (Contract) */}
+                  <div className="rounded-xl bg-[#001229] p-4 border border-white/10">
                     <p className="text-xs text-white/60">Total Staked</p>
-                    <p className="mt-2 text-2xl font-bold text-white">{platformStats.totalStaked.toFixed(2)} DRMR</p>
-                    <p className="mt-1 text-xs text-white/50">{platformStats.totalActivities} activities</p>
+                    <p className="mt-2 text-2xl font-bold text-white">
+                      {(Number(stakingPool.totalStaked) / 1e9).toLocaleString(undefined, { maximumFractionDigits: 2 })} DRMR
+                    </p>
+                    <p className="mt-1 text-xs text-green-400">Verified on-chain</p>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-[#001229] p-4">
-                    <p className="text-xs text-white/60">Total Activities</p>
-                    <p className="mt-2 text-2xl font-bold text-white">{platformStats.totalActivities.toLocaleString()}</p>
-                    <p className="mt-1 text-xs text-white/50">All time</p>
+
+                  {/* Total Stakers (Contract) */}
+                  <div className="rounded-xl bg-[#001229] p-4 border border-white/10">
+                    <p className="text-xs text-white/60">Total Stakers</p>
+                    <p className="mt-2 text-2xl font-bold text-white">
+                      {stakingPool.totalStakers.toString()}
+                    </p>
+                    <p className="mt-1 text-xs text-green-400">Active wallets</p>
+                  </div>
+
+                  {/* Rewards Distributed (Contract) */}
+                  <div className="rounded-xl bg-[#001229] p-4 border border-white/10">
+                    <p className="text-xs text-white/60">Rewards Distributed</p>
+                    <p className="mt-2 text-2xl font-bold text-white">
+                      {(Number(stakingPool.totalRewardsDistributed) / 1e9).toLocaleString(undefined, { maximumFractionDigits: 2 })} DRMR
+                    </p>
+                    <p className="mt-1 text-xs text-white/50">All-time claimed</p>
+                  </div>
+
+                  {/* Rewards In Pool (Contract) */}
+                  <div className="rounded-xl bg-[#001229] p-4 border border-white/10">
+                    <p className="text-xs text-white/60">Rewards Reserve</p>
+                    <p className="mt-2 text-2xl font-bold text-white">
+                      {(Number(stakingPool.rewardsInPool) / 1e9).toLocaleString(undefined, { maximumFractionDigits: 2 })} DRMR
+                    </p>
+                    <p className="mt-1 text-xs text-white/50">Available for payout</p>
                   </div>
                 </div>
-
-                {/* Activity Stats */}
-                {platformStats.activityStats.length > 0 && (
-                  <div className="rounded-xl border border-white/10 bg-[#001229] p-6">
-                    <h2 className="mb-4 text-lg font-semibold text-white">Activity Breakdown</h2>
-                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                      {platformStats.activityStats.map((stat) => (
-                        <div
-                          key={stat.action}
-                          className="rounded-lg border border-white/10 bg-[#000d1f] p-3"
-                        >
-                          <p className="text-xs text-white/60">{stat.action}</p>
-                          <p className="mt-1 text-lg font-semibold text-white">{stat.count}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="rounded-2xl border border-white/10 bg-[#001229] p-6">
-                <p className="text-white/70">No platform stats available</p>
-              </div>
-            )}
+              ) : (
+                <div className="rounded-xl bg-[#001229] p-6 text-center border border-white/10">
+                  <p className="text-white/70">Contract data not available. The staking pool might not be initialized yet.</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

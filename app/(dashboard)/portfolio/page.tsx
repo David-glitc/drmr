@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useAtomValue } from "jotai";
 
+import { networkAtom, explorerAtom } from "../../../lib/state/atoms";
 import { usePortfolio } from "../../../hooks/usePortfolio";
 import { useWallet } from "../../../hooks/useWallet";
 import { useSolanaAccount } from "../../../hooks/useSolanaAccount";
@@ -258,6 +260,8 @@ const fallbackTokens = [
 
 export default function PortfolioPage() {
   const { walletAddress, isConnected, isConnecting, connect } = useWallet();
+  const network = useAtomValue(networkAtom);
+  const explorer = useAtomValue(explorerAtom);
   const { data: solanaAccount, isLoading: accountLoading } = useSolanaAccount(
     walletAddress ?? null
   );
@@ -543,10 +547,25 @@ export default function PortfolioPage() {
                   minute: "2-digit",
                 });
 
+                let explorerUrl = "";
+                const clusterParam = network === "devnet" ? "?cluster=devnet" : network === "testnet" ? "?cluster=testnet" : "";
+
+                if (explorer === "solscan") {
+                  explorerUrl = `https://solscan.io/tx/${tx.signature}${clusterParam}`;
+                } else if (explorer === "solanafm") {
+                  const fmCluster = network === "devnet" ? "?cluster=devnet-solana" : network === "testnet" ? "?cluster=testnet-solana" : "";
+                  explorerUrl = `https://solana.fm/tx/${tx.signature}${fmCluster}`;
+                } else {
+                  explorerUrl = `https://explorer.solana.com/tx/${tx.signature}${clusterParam}`;
+                }
+
                 return (
-                  <div
+                  <a
                     key={tx.signature}
-                    className="rounded-xl border border-white/10 bg-[#000d1f] p-4 hover:bg-white/5 transition"
+                    href={explorerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block rounded-xl border border-white/10 bg-[#000d1f] p-4 hover:bg-white/5 transition"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -579,7 +598,7 @@ export default function PortfolioPage() {
                         <p className="text-xs text-white/40">{formattedTime}</p>
                       </div>
                     </div>
-                  </div>
+                  </a>
                 );
               })}
             </div>

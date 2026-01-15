@@ -6,14 +6,14 @@ export type PoolKey = "SOL" | "DRMR";
 const poolConfigs: Record<PoolKey, PoolConfig> = {
   SOL: {
     apy: "7.8%",
-    tvl: "$18.2M",
+    tvl: "1,240,000 SOL",
     epoch: "Weekly epochs",
     description:
       "Power the validator set and earn slashing-protected SOL yield.",
   },
   DRMR: {
     apy: "15.4%",
-    tvl: "$24.6M",
+    tvl: "24,600,000 DRMR",
     epoch: "7-day lock",
     description:
       "Boost DRMR scarcity with dual rewards: SOL yield + burn multipliers.",
@@ -27,8 +27,10 @@ export class StakingService {
 
   estimateRewards(pool: PoolKey, amount: number): string {
     const apy = pool === "SOL" ? 0.078 : 0.154;
-    const weekly = (amount * (apy / 52)).toFixed(pool === "SOL" ? 2 : 0);
-    return pool === "SOL" ? `${weekly} SOL` : `${weekly} DRMR`;
+    // For DRMR, we use a more simplified daily/cycle calculation
+    const annual = amount * apy;
+    const cycle = (annual / (365 * 24 * 12)).toFixed(2); // Assuming 5-min cycles for estimation
+    return `${cycle} DRMR`;
   }
 
   /**

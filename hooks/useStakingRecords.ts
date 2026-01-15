@@ -44,7 +44,8 @@ export function useStakingRecords() {
       }>;
     },
     enabled: Boolean(walletAddress),
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 300000, // Refetch every 5 minutes
+    staleTime: 300000, // Consider stale after 5 minutes
   });
 
   const createStakingRecord = useMutation({

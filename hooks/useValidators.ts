@@ -24,8 +24,8 @@ export function useValidators(sync: boolean = false) {
       return data.validators as (ValidatorInfo & { id?: string })[];
     },
     enabled: Boolean(connection),
-    refetchInterval: 60000, // Refetch every minute
-    staleTime: 30000, // Consider stale after 30 seconds
+    refetchInterval: 300000, // Refetch every 5 minutes
+    staleTime: 300000, // Consider stale after 5 minutes
   });
 
   return {

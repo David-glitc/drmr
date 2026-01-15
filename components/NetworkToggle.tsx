@@ -10,58 +10,39 @@ export function NetworkToggle() {
   const walletStatus = useAtomValue(walletStatusAtom);
   const isDisabled = walletStatus !== "connected";
 
-  // Mainnet is coming soon, so we'll keep it on devnet for now
-  const isMainnetDisabled = true;
-
-  const toggleNetwork = () => {
-    if (isDisabled || isMainnetDisabled) return;
-    setNetwork(network === "mainnet-beta" ? "devnet" : "mainnet-beta");
+  const toggleNetwork = (targetNetwork: "devnet" | "mainnet-beta") => {
+    if (isDisabled) return;
+    setNetwork(targetNetwork);
+    // Refresh the page to ensure all hooks and services re-initialize with the new network
+    window.location.reload();
   };
 
   return (
-    <div className="flex items-center gap-2">
-    <button
-        onClick={() => !isDisabled && setNetwork("devnet")}
-      disabled={isDisabled}
-      className={`
-        relative inline-flex h-8 items-center rounded-full border px-3 transition-colors
-        ${isDisabled 
-            ? "border-white/10 bg-[#111118] cursor-not-allowed opacity-50" 
-            : network === "devnet"
-            ? "border-blue-500/50 bg-blue-500/20"
-            : "border-white/10 bg-[#111118] hover:bg-white/5"
-        }
-      `}
-        title={isDisabled ? "Connect wallet to change network" : "Devnet (Default)"}
-    >
-      <span className="text-xs font-semibold text-white">
-          Devnet
-        </span>
-      </button>
-      
-      <button
-        onClick={toggleNetwork}
-        disabled={isDisabled || isMainnetDisabled}
-        className={`
-          relative inline-flex h-8 items-center rounded-full border px-3 transition-colors
-          ${isDisabled || isMainnetDisabled
-            ? "border-white/10 bg-[#111118] cursor-not-allowed opacity-50" 
-            : network === "mainnet-beta"
-            ? "border-red-500/50 bg-red-500/20"
-            : "border-white/10 bg-[#111118] hover:bg-white/5"
-          }
+    <div className={`relative flex items-center rounded-lg border border-white/10 bg-[#001229] p-1 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+      {/* Sliding Background */}
+      <div
+        className={`absolute h-[calc(100%-8px)] w-[calc(50%-4px)] rounded-md bg-white/10 transition-all duration-300 ease-out
+          ${network === 'devnet' ? 'left-1' : 'left-[calc(50%+2px)]'}
         `}
-        title={isMainnetDisabled ? "Mainnet coming soon" : isDisabled ? "Connect wallet to change network" : "Switch to Mainnet"}
+      />
+
+      <button
+        onClick={() => toggleNetwork("devnet")}
+        disabled={isDisabled}
+        className={`relative z-10 w-20 py-1.5 text-xs font-medium transition-colors ${network === 'devnet' ? 'text-white' : 'text-white/50 hover:text-white/70'
+          }`}
       >
-        <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-          Mainnet
-          {isMainnetDisabled && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-white/60">
-              Soon
-            </span>
-          )}
-      </span>
-    </button>
+        Devnet
+      </button>
+
+      <button
+        onClick={() => toggleNetwork("mainnet-beta")}
+        disabled={isDisabled}
+        className={`relative z-10 w-20 py-1.5 text-xs font-medium transition-colors ${network === 'mainnet-beta' ? 'text-white' : 'text-white/50 hover:text-white/70'
+          }`}
+      >
+        Mainnet
+      </button>
     </div>
   );
 }

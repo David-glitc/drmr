@@ -1,7 +1,9 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
-import type { WalletStatus } from "../types";
+import type { WalletStatus, PoolConfig } from "../types";
+import type { PoolKey } from "../services/staking-service";
+import { stakingService } from "../services";
 
 /**
  * Core Wallet State Atoms
@@ -68,13 +70,13 @@ function getInitialNetwork(): "mainnet-beta" | "devnet" | "testnet" {
     }
     return "devnet"; // Default
   }
-  
+
   // Client-side: check localStorage first, then env variable
   const stored = localStorage.getItem("drmr-network");
   if (stored === "mainnet-beta" || stored === "devnet" || stored === "testnet") {
     return stored;
   }
-  
+
   // If not in localStorage, use env variable
   const mode = process.env.NEXT_PUBLIC_MODE?.toLowerCase();
   if (mode === "mainnet" || mode === "mainnet-beta") {
@@ -90,11 +92,12 @@ function getInitialNetwork(): "mainnet-beta" | "devnet" | "testnet" {
  * Settings Atoms (with persistence)
  */
 export const autoRefreshAtom = atomWithStorage<boolean>("drmr-auto-refresh", true);
-export const refreshIntervalAtom = atomWithStorage<number>("drmr-refresh-interval", 30000);
+export const refreshIntervalAtom = atomWithStorage<number>("drmr-refresh-interval", 300000);
 export const networkAtom = atomWithStorage<"mainnet-beta" | "devnet" | "testnet">(
   "drmr-network",
   getInitialNetwork()
 );
+export const explorerAtom = atomWithStorage<"solana" | "solscan" | "solanafm">("drmr-explorer", "solana");
 
 /**
  * Derived Atoms
@@ -113,9 +116,9 @@ export const shouldRefreshAtom = atom(
     const refreshInterval = get(refreshIntervalAtom);
     const cacheTimestamps = get(cacheTimestampAtom);
     const now = Date.now();
-    
+
     if (!autoRefresh) return false;
-    
+
     // Check if any cache is stale
     return Object.values(cacheTimestamps).some(
       (timestamp) => now - timestamp > refreshInterval
@@ -123,3 +126,10 @@ export const shouldRefreshAtom = atom(
   }
 );
 
+
+/**
+ * Staking State Atoms
+ */
+export const activePoolAtom = atom<PoolKey>("DRMR");
+export const poolConfigAtom = atom<PoolConfig>(stakingService.getPoolConfig("DRMR"));
+export const estimatedRewardsAtom = atom<string>(stakingService.estimateRewards("DRMR", 0));

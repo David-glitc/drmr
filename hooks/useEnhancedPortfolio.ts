@@ -42,28 +42,28 @@ export function useEnhancedPortfolio() {
 
       // Use onChainFetcher for optimized fetching with retry and cache
       const cacheKey = `portfolio:${walletAddress}`;
-      
+
       return onChainFetcher.fetch(
         cacheKey,
         async () => {
           return await portfolioService.fetchPortfolio(
             walletAddress,
             connection,
-            solPrice,
+            solPrice ?? undefined,
             network
           );
         },
         {
           cache: true,
-          cacheTTL: 30000, // 30s cache
+          cacheTTL: 300000, // 5 minutes cache
           retries: 2, // Retry failed requests
         }
       );
     },
     enabled: Boolean(walletAddress) && Boolean(connection),
     refetchInterval: autoRefresh ? refreshInterval : false,
-    staleTime: 15000, // Consider data stale after 15s
-    gcTime: 60000, // Keep in cache for 60s
+    staleTime: 300000, // Consider data stale after 5 minutes
+    gcTime: 600000, // Keep in cache for 10 minutes
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });

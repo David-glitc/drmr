@@ -44,7 +44,7 @@ export function useTransactionHistory(params: UseTransactionHistoryParams = {}) 
     enabled = true,
     fetchAll = false,
   } = params;
-  
+
   // Use a higher limit if fetching all
   const actualLimit = fetchAll ? 1000 : limit;
 
@@ -83,7 +83,7 @@ export function useTransactionHistory(params: UseTransactionHistoryParams = {}) 
       }
 
       const response = await fetch(`/api/transactions?${searchParams.toString()}`);
-      
+
       if (!response.ok) {
         throw new Error("Failed to fetch transaction history");
       }
@@ -91,8 +91,8 @@ export function useTransactionHistory(params: UseTransactionHistoryParams = {}) 
       return (await response.json()) as TransactionHistoryResponse;
     },
     enabled: enabled && Boolean(walletAddress),
-    refetchInterval: 60000, // Refetch every minute
-    staleTime: 30000, // Consider stale after 30 seconds
+    refetchInterval: 300000, // Refetch every 5 minutes
+    staleTime: 300000, // Consider stale after 5 minutes
     retry: 2,
   });
 
