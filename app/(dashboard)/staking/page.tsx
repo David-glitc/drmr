@@ -15,9 +15,6 @@ export default function StakingPage() {
   const { poolConfig, estimatedRewards, estimateRewards } = useStaking();
   const { walletAddress, isConnected } = useWallet();
 
-  const DRMR_MINT = process.env.NEXT_PUBLIC_DRMR_MINT || "";
-
-  const { data: drmrBalance } = useDrmrToken(DRMR_MINT);
   const {
     stake: stakeDrmr,
     fetchStaker,
@@ -31,6 +28,13 @@ export default function StakingPage() {
     queryFn: fetchStakingPool,
     refetchInterval: 30000,
   });
+
+  // Use the mint from the pool (or fallback to env var if pool not initialized)
+  const DRMR_MINT = stakingPool?.drmrMint 
+    ? stakingPool.drmrMint.toBase58() 
+    : (process.env.NEXT_PUBLIC_DRMR_MINT || "");
+
+  const { data: drmrBalance } = useDrmrToken(DRMR_MINT || null);
 
   const { data: stakerData } = useQuery({
     queryKey: ["staker", walletAddress],
@@ -73,7 +77,7 @@ export default function StakingPage() {
 
   const minDrmrStakeAmount = 0.001;
   const hasInsufficientBalance = drmrBalance ? drmrBalance.balance < minDrmrStakeAmount : true;
-  const canStake = stakeAmount && parseFloat(stakeAmount) >= minDrmrStakeAmount && !hasInsufficientBalance && !!DRMR_MINT;
+  const canStake = stakeAmount && parseFloat(stakeAmount) >= minDrmrStakeAmount && !hasInsufficientBalance && !!DRMR_MINT && !!stakingPool;
 
   return (
     <div className="space-y-6 overflow-x-hidden">
@@ -327,7 +331,7 @@ export default function StakingPage() {
 
             <button
               onClick={async () => {
-                if (!canStake || !walletAddress || !DRMR_MINT) return;
+                if (!canStake || !walletAddress || !DRMR_MINT || !stakingPool) return;
                 try {
                   setIsStaking(true);
                   setStakingError(null);
@@ -344,7 +348,7 @@ export default function StakingPage() {
                   setIsStaking(false);
                 }
               }}
-              disabled={!canStake || isStaking || isDrmrStakingLoading}
+              disabled={!canStake || isStaking || isDrmrStakingLoading || !stakingPool}
               className="w-full rounded-xl bg-red-500 py-4 text-base font-bold text-white transition hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isStaking ? "Processing..." : "Confirm Stake"}
