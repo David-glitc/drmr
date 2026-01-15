@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     let connection: Connection;
     let validators;
-    
+
     try {
       connection = new Connection(rpcUrl, "confirmed");
       const validatorService = new ValidatorService(connection, network as "devnet" | "mainnet-beta");
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       validators = await validatorService.fetchValidators();
     } catch (error) {
       console.error("[Validators API] Error connecting to RPC:", error);
-      
+
       // If custom RPC fails, try public endpoint as fallback
       if (rpcUrl !== clusterApiUrl(network === "mainnet-beta" ? "mainnet-beta" : "devnet")) {
         console.log("[Validators API] Retrying with public RPC endpoint...");
@@ -61,51 +61,51 @@ export async function GET(request: NextRequest) {
     let dbSyncSuccess = false;
     if (sync) {
       try {
-      console.log(`[Validators API] Syncing ${validators.length} validators to database...`);
-      
+        console.log(`[Validators API] Syncing ${validators.length} validators to database...`);
+
         const syncResults = await Promise.allSettled(
-        validators.map(async (validator) => {
-          try {
-            await prisma.validator.upsert({
-              where: { voteAccount: validator.voteAccount },
-              update: {
-                identity: validator.identity,
-                name: validator.name,
-                apy: validator.apy,
-                commission: validator.commission,
-                activatedStake: BigInt(validator.activatedStake),
-                epochCredits: BigInt(validator.epochCredits),
-                lastVote: BigInt(validator.lastVote),
-                rootSlot: BigInt(validator.rootSlot),
-                delinquent: validator.delinquent,
-                isActive: !validator.delinquent,
-                lastSyncedAt: new Date(),
-              },
-              create: {
-                voteAccount: validator.voteAccount,
-                identity: validator.identity,
-                name: validator.name,
-                network: network,
-                apy: validator.apy,
-                commission: validator.commission,
-                activatedStake: BigInt(validator.activatedStake),
-                epochCredits: BigInt(validator.epochCredits),
-                lastVote: BigInt(validator.lastVote),
-                rootSlot: BigInt(validator.rootSlot),
-                delinquent: validator.delinquent,
-                isActive: !validator.delinquent,
-              },
-            });
-          } catch (error) {
-            console.error(`[Validators API] Error syncing validator ${validator.voteAccount}:`, error);
+          validators.map(async (validator) => {
+            try {
+              await (prisma as any).validator.upsert({
+                where: { voteAccount: validator.voteAccount },
+                update: {
+                  identity: validator.identity,
+                  name: validator.name,
+                  apy: validator.apy,
+                  commission: validator.commission,
+                  activatedStake: BigInt(validator.activatedStake),
+                  epochCredits: BigInt(validator.epochCredits),
+                  lastVote: BigInt(validator.lastVote),
+                  rootSlot: BigInt(validator.rootSlot),
+                  delinquent: validator.delinquent,
+                  isActive: !validator.delinquent,
+                  lastSyncedAt: new Date(),
+                },
+                create: {
+                  voteAccount: validator.voteAccount,
+                  identity: validator.identity,
+                  name: validator.name,
+                  network: network,
+                  apy: validator.apy,
+                  commission: validator.commission,
+                  activatedStake: BigInt(validator.activatedStake),
+                  epochCredits: BigInt(validator.epochCredits),
+                  lastVote: BigInt(validator.lastVote),
+                  rootSlot: BigInt(validator.rootSlot),
+                  delinquent: validator.delinquent,
+                  isActive: !validator.delinquent,
+                },
+              });
+            } catch (error) {
+              console.error(`[Validators API] Error syncing validator ${validator.voteAccount}:`, error);
               throw error;
-          }
-        })
-      );
+            }
+          })
+        );
 
         const successful = syncResults.filter((r) => r.status === "fulfilled").length;
         const failed = syncResults.filter((r) => r.status === "rejected").length;
-        
+
         if (successful > 0) {
           console.log(`[Validators API] Successfully synced ${successful} validators to database${failed > 0 ? ` (${failed} failed)` : ""}`);
           dbSyncSuccess = true;
@@ -123,29 +123,29 @@ export async function GET(request: NextRequest) {
     // Filter to only active validators (non-delinquent)
     // For devnet, we only want active validators
     const activeValidators = validators.filter((v) => !v.delinquent);
-    
+
     // If syncing and database is available, get database IDs for validators
     type ValidatorWithId = ValidatorInfo & { id?: string };
     let validatorsWithIds: ValidatorWithId[] = activeValidators;
-    
+
     if (sync && dbSyncSuccess) {
       try {
-      const dbValidators = await prisma.validator.findMany({
-          where: { 
+        const dbValidators = await (prisma as any).validator.findMany({
+          where: {
             network,
             isActive: true, // Only get active validators
           },
-        select: { id: true, voteAccount: true },
-      });
-      
-      const validatorMap = new Map(dbValidators.map((v: { voteAccount: string; id: string }) => [v.voteAccount, v.id]));
+          select: { id: true, voteAccount: true },
+        });
+
+        const validatorMap = new Map(dbValidators.map((v: { voteAccount: string; id: string }) => [v.voteAccount, v.id]));
         validatorsWithIds = activeValidators.map((v) => {
-        const mappedId = validatorMap.get(v.voteAccount);
-        return {
-          ...v,
-          id: mappedId ? mappedId : v.voteAccount, // Use vote account as fallback ID
-        } as ValidatorWithId;
-      });
+          const mappedId = validatorMap.get(v.voteAccount);
+          return {
+            ...v,
+            id: mappedId ? mappedId : v.voteAccount, // Use vote account as fallback ID
+          } as ValidatorWithId;
+        });
       } catch (error) {
         // Database query failed - use vote account as ID fallback
         console.warn(`[Validators API] Could not fetch database IDs. Using vote accounts as IDs.`, error instanceof Error ? error.message : String(error));
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
         id: v.voteAccount,
       } as ValidatorWithId));
     }
-    
+
     return NextResponse.json({
       validators: validatorsWithIds.map((v) => ({
         ...v,
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
     // Sync to database
     const results = await Promise.allSettled(
       validators.map(async (validator) => {
-        return await prisma.validator.upsert({
+        return await (prisma as any).validator.upsert({
           where: { voteAccount: validator.voteAccount },
           update: {
             identity: validator.identity,
