@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
 
     // Filter for NFTs only (exclude fungible tokens)
     // DAS API returns assets with interface types: 'V1_NFT', 'V1_PRINT', 'ProgrammableNFT', etc.
-    const nftAssets = assets.items.filter((asset) => {
+    const nftAssets = assets.items.filter((asset: any) => {
       const assetInterface = asset.interface;
       return assetInterface === 'V1_NFT' || assetInterface === 'V1_PRINT' || assetInterface === 'ProgrammableNFT' || assetInterface === 'V1_PRINT_EDITION';
     });
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     // Process NFTs - limit to 100 for performance
     const nftsToProcess = nftAssets.slice(0, 100);
     const nftDetails = await Promise.allSettled(
-      nftsToProcess.map(async (asset) => {
+      nftsToProcess.map(async (asset: { id: any; content: { metadata: any; links: any; }; grouping: any[]; }) => {
         try {
           // Extract data from DAS API asset
           const assetId = asset.id;
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
           const image = links?.image || links?.icon || "";
 
           // Get collection info
-          const grouping = asset.grouping?.find(g => g.group_key === 'collection');
+          const grouping = asset.grouping?.find((g: { group_key: string; }) => g.group_key === 'collection');
           const collection = grouping?.group_value || undefined;
 
           // Get attributes from metadata
