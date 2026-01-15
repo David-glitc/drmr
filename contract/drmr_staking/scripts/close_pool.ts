@@ -22,7 +22,7 @@ import { PublicKey, Keypair, SystemProgram, Connection, clusterApiUrl } from "@s
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import * as fs from "fs";
 import * as path from "path";
-import { DrmrStaking } from "../target/types/drmr_staking";
+// import { DrmrStaking } from "../target/types/drmr_staking";
 
 // Load environment variables from .env.local
 require("dotenv").config({ path: ".env.local" });
@@ -50,29 +50,29 @@ async function main() {
 
   // Setup provider
   let provider: anchor.Provider;
-  
+
   try {
     provider = anchor.AnchorProvider.env();
   } catch (error: any) {
     if (error.message?.includes("ANCHOR_PROVIDER_URL")) {
       console.log("ℹ️  ANCHOR_PROVIDER_URL not set, using default devnet connection...");
-      
+
       const rpcUrl = process.env.ANCHOR_PROVIDER_URL || clusterApiUrl("devnet");
       const connection = new Connection(rpcUrl, "confirmed");
-      
+
       // Get wallet from Anchor config or use default
-      const walletPath = process.env.ANCHOR_WALLET || 
+      const walletPath = process.env.ANCHOR_WALLET ||
         (process.env.HOME ? `${process.env.HOME}/.config/solana/id.json` : "~/.config/solana/id.json");
-      
+
       // Expand ~ to home directory
-      const expandedPath = walletPath.startsWith("~") 
+      const expandedPath = walletPath.startsWith("~")
         ? walletPath.replace("~", process.env.HOME || "")
         : walletPath;
-      
+
       const walletKeypair = Keypair.fromSecretKey(
         new Uint8Array(JSON.parse(fs.readFileSync(expandedPath, "utf-8")))
       );
-      
+
       const wallet = {
         publicKey: walletKeypair.publicKey,
         signTransaction: async (tx: any) => {
@@ -84,27 +84,27 @@ async function main() {
           return txs;
         },
       } as anchor.Wallet;
-      
+
       provider = new anchor.AnchorProvider(connection, wallet, {
         commitment: "confirmed",
       });
-      
+
       console.log(`   Using RPC: ${rpcUrl}`);
       console.log(`   Wallet: ${walletKeypair.publicKey.toBase58()}\n`);
     } else {
       throw error;
     }
   }
-  
+
   anchor.setProvider(provider);
 
   // Use workspace like frontend/tests do - automatically loads IDL
-  const program = anchor.workspace.drmrStaking as Program<DrmrStaking>;
-  
+  const program = (anchor.workspace as any).drmrStaking as any;
+
   if (!program) {
     throw new Error("Failed to load program from workspace. Make sure IDL is generated.");
   }
-  
+
   console.log("✅ Program loaded from workspace\n");
 
   // Derive PDAs
@@ -148,7 +148,7 @@ async function main() {
     console.log("✅ Staking pool found");
     console.log(`   Pool Admin: ${pool.admin.toBase58()}`);
     console.log(`   Current Admin: ${admin.toBase58()}`);
-    
+
     if (!pool.admin.equals(admin)) {
       console.error(`\n❌ ERROR: You are not the pool admin!`);
       console.error(`   Pool admin: ${pool.admin.toBase58()}`);
@@ -159,7 +159,7 @@ async function main() {
     // Check vault balances
     const stakeVaultInfo = await provider.connection.getTokenAccountBalance(stakeVaultPDA);
     const rewardVaultInfo = await provider.connection.getTokenAccountBalance(rewardVaultPDA);
-    
+
     const stakeBalance = stakeVaultInfo.value.amount;
     const rewardBalance = rewardVaultInfo.value.amount;
     const totalBalance = BigInt(stakeBalance) + BigInt(rewardBalance);
@@ -185,13 +185,13 @@ async function main() {
   console.log("   2. Transfer ALL tokens from reward_vault to admin");
   console.log("   3. Close all accounts (staking_pool, stake_vault, reward_vault)");
   console.log("   4. This action is IRREVERSIBLE!\n");
-  
+
   // In a real script, you might want to add a confirmation prompt here
   // For now, we'll proceed automatically
 
   try {
     console.log("🚀 Executing close transaction...\n");
-    
+
     const tx = await program.methods
       .close()
       .accounts({
@@ -212,11 +212,11 @@ async function main() {
     console.log(`\n📊 Check the transaction logs for transfer details:`);
     console.log(`   https://solscan.io/tx/${tx}`);
     console.log(`   (or your preferred Solana explorer)\n`);
-    
+
     // Wait a bit and verify vaults are closed
     console.log("⏳ Waiting for confirmation...");
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     try {
       await program.account.stakingPool.fetch(stakingPoolPDA);
       console.log("⚠️  Warning: Pool account still exists (may need more confirmations)");
