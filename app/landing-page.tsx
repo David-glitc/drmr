@@ -9,7 +9,8 @@ import { NetworkToggle } from "../components/NetworkToggle";
 
 export default function LandingPage() {
   const router = useRouter();
-  const { walletAddress, isConnected, isConnecting, connect, disconnect } = useWallet();
+  const { walletAddress, isConnected, isConnecting, connect, disconnect } =
+    useWallet();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Redirect to portfolio page when wallet connects
@@ -20,34 +21,58 @@ export default function LandingPage() {
   }, [isConnected, walletAddress, router]);
 
   return (
-    <div className="min-h-screen text-white scroll-smooth" style={{ background: 'var(--bg-primary)' }}>
+    <div
+      className="min-h-screen text-white scroll-smooth"
+      style={{ background: "var(--bg-primary)" }}
+    >
       {/* Loading Overlay */}
-      <LoadingOverlay
-        show={isConnecting}
-        message="Connecting Wallet..."
-      />
+      <LoadingOverlay show={isConnecting} message="Connecting Wallet..." />
 
       {/* Navigation */}
-      <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/10 backdrop-blur-sm" style={{ background: 'var(--bg-navbar)' }}>
+      <nav
+        className="fixed inset-x-0 top-0 z-50 border-b border-white/10 backdrop-blur-sm"
+        style={{ background: "var(--bg-navbar)" }}
+      >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo.jpg" alt="DRMR Logo" className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg object-cover" />
-            <span className="text-xl sm:text-2xl font-bold text-white">$DRMR</span>
+            <img
+              src="/logo.jpg"
+              alt="DRMR Logo"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg object-cover"
+            />
+            <span className="text-xl sm:text-2xl font-bold text-white">
+              $DRMR
+            </span>
           </Link>
           <div className="hidden items-center gap-8 md:flex">
-            <Link href="/" className="text-sm font-medium text-white hover:text-red-400 transition">
+            <Link
+              href="/"
+              className="text-sm font-medium text-white hover:text-red-400 transition"
+            >
               Home
             </Link>
-            <Link href="/portfolio" className="text-sm font-medium text-slate-300 hover:text-red-400 transition">
+            <Link
+              href="/portfolio"
+              className="text-sm font-medium text-slate-300 hover:text-red-400 transition"
+            >
               Analyze
             </Link>
-            <a href="#video" className="text-sm font-medium text-slate-300 hover:text-red-400 transition">
+            <a
+              href="#video"
+              className="text-sm font-medium text-slate-300 hover:text-red-400 transition"
+            >
               Video
             </a>
-            <a href="#community" className="text-sm font-medium text-slate-300 hover:text-red-400 transition">
+            <a
+              href="#community"
+              className="text-sm font-medium text-slate-300 hover:text-red-400 transition"
+            >
               Community
             </a>
-            <a href="#about" className="text-sm font-medium text-slate-300 hover:text-red-400 transition">
+            <a
+              href="#about"
+              className="text-sm font-medium text-slate-300 hover:text-red-400 transition"
+            >
               About
             </a>
           </div>
@@ -64,7 +89,9 @@ export default function LandingPage() {
                 className="rounded-full border border-white/20 bg-white/5 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-white/10 flex items-center gap-2"
               >
                 <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                <span className="hidden sm:inline">{walletAddress?.slice(0, 4)}...{walletAddress?.slice(-4)}</span>
+                <span className="hidden sm:inline">
+                  {walletAddress?.slice(0, 4)}...{walletAddress?.slice(-4)}
+                </span>
                 <span className="sm:hidden">Connected</span>
               </button>
             ) : (
@@ -80,32 +107,62 @@ export default function LandingPage() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden rounded-lg border border-white/20 bg-white/5 p-2 text-white"
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 {mobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 )}
               </svg>
             </button>
           </div>
         </div>
         {mobileMenuOpen && (
-          <div className="border-t border-white/10 md:hidden" style={{ background: 'var(--bg-primary)' }}>
+          <div
+            className="border-t border-white/10 md:hidden"
+            style={{ background: "var(--bg-primary)" }}
+          >
             <div className="px-4 py-4 space-y-3">
               <Link href="/" className="block text-sm font-medium text-white">
                 Home
               </Link>
-              <Link href="/portfolio" className="block text-sm font-medium text-slate-300">
+              <Link
+                href="/portfolio"
+                className="block text-sm font-medium text-slate-300"
+              >
                 Analyze
               </Link>
-              <a href="#video" className="block text-sm font-medium text-slate-300">
+              <a
+                href="#video"
+                className="block text-sm font-medium text-slate-300"
+              >
                 Video
               </a>
-              <a href="#community" className="block text-sm font-medium text-slate-300">
+              <a
+                href="#community"
+                className="block text-sm font-medium text-slate-300"
+              >
                 Community
               </a>
-              <a href="#about" className="block text-sm font-medium text-slate-300">
+              <a
+                href="#about"
+                className="block text-sm font-medium text-slate-300"
+              >
                 About
               </a>
               <div className="space-y-3">
@@ -142,16 +199,11 @@ export default function LandingPage() {
               Revive The <span className="text-red-400">American Dream</span>
             </h1>
             <p className="mt-6 text-lg leading-8 text-slate-300 sm:text-xl">
-              The dream isn't dead - it's just been hijacked by Wall Street. Take it back with American Dream Coin. Real ownership. Real wealth. Real freedom for the people.
+              The dream isn't dead - it's just been hijacked by Wall Street.
+              Take it back with American Dream Coin. Real ownership. Real
+              wealth. Real freedom for the people.
             </p>
-            <div className="mt-10 flex items-center justify-center gap-4">
-              <Link
-                href="/portfolio"
-                className="rounded-full border border-red-500/50 bg-red-500/20 px-6 py-3 text-base font-semibold text-red-300 transition hover:bg-red-500/30"
-              >
-                Connect Wallet to Get Started
-              </Link>
-            </div>
+            {/* Button moved to after video */}
           </div>
         </div>
       </section>
@@ -171,6 +223,14 @@ export default function LandingPage() {
                 ></iframe>
               </div>
             </div>
+            <div className="mt-10 flex items-center justify-center gap-4">
+              <Link
+                href="/portfolio"
+                className="rounded-full border border-red-500/50 bg-red-500/20 px-6 py-3 text-base font-semibold text-red-300 transition hover:bg-red-500/30"
+              >
+                Connect Wallet to Get Started
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -186,23 +246,35 @@ export default function LandingPage() {
           <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3">
             <div className="rounded-2xl border border-red-500/20 bg-slate-900/50 p-8 backdrop-blur-sm hover:border-red-500/40 transition">
               <div className="text-3xl mb-4">🏠</div>
-              <h3 className="text-xl font-semibold text-white">Own Your Piece of <span className="text-red-400">America</span></h3>
+              <h3 className="text-xl font-semibold text-white">
+                Own Your Piece of <span className="text-red-400">America</span>
+              </h3>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                $DRMR isn't just a token - it's digital real estate in the new American frontier. While house prices soar, smart money is stacking $DRMR for true ownership.
+                $DRMR isn't just a token - it's digital real estate in the new
+                American frontier. While house prices soar, smart money is
+                stacking $DRMR for true ownership.
               </p>
             </div>
             <div className="rounded-2xl border border-red-500/20 bg-slate-900/50 p-8 backdrop-blur-sm hover:border-red-500/40 transition">
               <div className="text-3xl mb-4">💪</div>
-              <h3 className="text-xl font-semibold text-white">Power Back to The <span className="text-red-400">People</span></h3>
+              <h3 className="text-xl font-semibold text-white">
+                Power Back to The <span className="text-red-400">People</span>
+              </h3>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                Wall Street gatekeepers can't stop you from buying $DRMR. No credit checks. No applications. Just pure, decentralized American opportunity.
+                Wall Street gatekeepers can't stop you from buying $DRMR. No
+                credit checks. No applications. Just pure, decentralized
+                American opportunity.
               </p>
             </div>
             <div className="rounded-2xl border border-red-500/20 bg-slate-900/50 p-8 backdrop-blur-sm hover:border-red-500/40 transition">
               <div className="text-3xl mb-4">🚀</div>
-              <h3 className="text-xl font-semibold text-white">The New <span className="text-red-400">Prosperity</span> Gospel</h3>
+              <h3 className="text-xl font-semibold text-white">
+                The New <span className="text-red-400">Prosperity</span> Gospel
+              </h3>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                Work hard, stack $DRMR, build generational wealth. This is how we restore the promise that anyone can make it in America. The dream lives in DeFi.
+                Work hard, stack $DRMR, build generational wealth. This is how
+                we restore the promise that anyone can make it in America. The
+                dream lives in DeFi.
               </p>
             </div>
           </div>
@@ -216,10 +288,12 @@ export default function LandingPage() {
             <div className="rounded-2xl border border-red-500/30 bg-gradient-to-br from-slate-900/90 to-slate-950/90 p-8 sm:p-12 backdrop-blur-sm">
               <div className="text-center">
                 <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                  Check Your <span className="text-red-400">$DRMR</span> Potential
+                  Check Your <span className="text-red-400">$DRMR</span>{" "}
+                  Potential
                 </h2>
                 <p className="mt-4 text-lg text-slate-300">
-                  Connect your wallet to see how $DRMR can restore your piece of the American Dream
+                  Connect your wallet to see how $DRMR can restore your piece of
+                  the American Dream
                 </p>
               </div>
 
@@ -232,8 +306,18 @@ export default function LandingPage() {
                 </Link>
 
                 <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-400">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
                   </svg>
                   <span>100% Read-Only Access</span>
                   <span>•</span>
@@ -245,8 +329,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-
-
       {/* Manifesto Section */}
       <section id="about" className="py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -257,16 +339,25 @@ export default function LandingPage() {
               </h2>
               <div className="mt-6 space-y-4 text-base leading-7 text-slate-300">
                 <p>
-                  The American Dream. They told us if we worked hard, we could achieve it. But the system failed us. Wages froze. Costs soared. The dream slipped away.
+                  The American Dream. They told us if we worked hard, we could
+                  achieve it. But the system failed us. Wages froze. Costs
+                  soared. The dream slipped away.
                 </p>
                 <p>
-                  It's time to take it back. Introducing American Dream Coin — $DRMR. Not just a meme coin — a movement. A community of dreamers. A symbol of defiance. A chance to reclaim the promise that was stolen.
+                  It's time to take it back. Introducing American Dream Coin —
+                  $DRMR. Not just a meme coin — a movement. A community of
+                  dreamers. A symbol of defiance. A chance to reclaim the
+                  promise that was stolen.
                 </p>
                 <p>
-                  Every token is more than crypto — it's a piece of hope, a stand against the broken system, a belief that the dream still lives.
+                  Every token is more than crypto — it's a piece of hope, a
+                  stand against the broken system, a belief that the dream still
+                  lives.
                 </p>
                 <p className="font-semibold text-white">
-                  The future belongs to those who dare to dream. And the dream starts here. American Dream Coin. Own the dream. Live the dream. Be the dream.
+                  The future belongs to those who dare to dream. And the dream
+                  starts here. American Dream Coin. Own the dream. Live the
+                  dream. Be the dream.
                 </p>
               </div>
             </div>
@@ -285,23 +376,32 @@ export default function LandingPage() {
           <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3">
             <div className="rounded-2xl border border-red-500/20 bg-slate-900/50 p-8 backdrop-blur-sm hover:border-red-500/40 transition">
               <div className="text-3xl mb-4">🤝</div>
-              <h3 className="text-xl font-semibold text-white">Strong <span className="text-red-400">Community</span></h3>
+              <h3 className="text-xl font-semibold text-white">
+                Strong <span className="text-red-400">Community</span>
+              </h3>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                Join thousands of like-minded Americans rebuilding wealth through decentralized finance and true ownership.
+                Join thousands of like-minded Americans rebuilding wealth
+                through decentralized finance and true ownership.
               </p>
             </div>
             <div className="rounded-2xl border border-red-500/20 bg-slate-900/50 p-8 backdrop-blur-sm hover:border-red-500/40 transition">
               <div className="text-3xl mb-4">📈</div>
-              <h3 className="text-xl font-semibold text-white">Transparent <span className="text-red-400">Growth</span></h3>
+              <h3 className="text-xl font-semibold text-white">
+                Transparent <span className="text-red-400">Growth</span>
+              </h3>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                Watch your $DRMR portfolio grow with real-time analytics and community-driven insights.
+                Watch your $DRMR portfolio grow with real-time analytics and
+                community-driven insights.
               </p>
             </div>
             <div className="rounded-2xl border border-red-500/20 bg-slate-900/50 p-8 backdrop-blur-sm hover:border-red-500/40 transition">
               <div className="text-3xl mb-4">🛡️</div>
-              <h3 className="text-xl font-semibold text-white"><span className="text-red-400">Secure</span> & Decentralized</h3>
+              <h3 className="text-xl font-semibold text-white">
+                <span className="text-red-400">Secure</span> & Decentralized
+              </h3>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                Built on Solana for speed and security. Your keys, your coins, your American Dream.
+                Built on Solana for speed and security. Your keys, your coins,
+                your American Dream.
               </p>
             </div>
           </div>
@@ -313,10 +413,12 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Ready to Revive Your <span className="text-red-400">American Dream</span>?
+              Ready to Revive Your{" "}
+              <span className="text-red-400">American Dream</span>?
             </h2>
             <p className="mt-6 text-lg leading-8 text-slate-300">
-              Stop watching from the sidelines. Join the $DRMR movement and take control of your financial future today.
+              Stop watching from the sidelines. Join the $DRMR movement and take
+              control of your financial future today.
             </p>
             <div className="mt-10 flex items-center justify-center gap-4">
               <Link
@@ -331,13 +433,17 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 py-12" style={{ background: 'var(--bg-secondary)' }}>
+      <footer
+        className="border-t border-white/10 py-12"
+        style={{ background: "var(--bg-secondary)" }}
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
             <div className="col-span-1">
               <h3 className="text-2xl font-bold text-white">$DRMR</h3>
               <p className="mt-2 text-sm text-slate-400">
-                Reviving the American Dream through decentralized finance and true ownership.
+                Reviving the American Dream through decentralized finance and
+                true ownership.
               </p>
             </div>
             <div>
@@ -354,7 +460,10 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
-                  <Link href="/portfolio" className="hover:text-white transition">
+                  <Link
+                    href="/portfolio"
+                    className="hover:text-white transition"
+                  >
                     Wallet Analysis
                   </Link>
                 </li>
@@ -364,7 +473,10 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
-                  <button onClick={connect} className="hover:text-white transition">
+                  <button
+                    onClick={connect}
+                    className="hover:text-white transition"
+                  >
                     Connect
                   </button>
                 </li>
@@ -380,7 +492,13 @@ export default function LandingPage() {
                     rel="noopener noreferrer"
                     className="hover:text-white transition flex items-center gap-2"
                   >
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    <svg
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
                     Twitter / X
                   </a>
                 </li>
@@ -391,7 +509,13 @@ export default function LandingPage() {
                     rel="noopener noreferrer"
                     className="hover:text-white transition flex items-center gap-2"
                   >
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" /></svg>
+                    <svg
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                    </svg>
                     Telegram
                   </a>
                 </li>
@@ -399,11 +523,12 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-8 border-t border-white/10 pt-8 text-center text-sm text-slate-400">
-            <p>© 2025 $DRMR. Reviving the American Dream, one token at a time.</p>
+            <p>
+              © 2025 $DRMR. Reviving the American Dream, one token at a time.
+            </p>
           </div>
         </div>
       </footer>
     </div>
   );
 }
-

@@ -5,8 +5,7 @@ import { AppProviders } from "../providers/app-providers";
 
 export const metadata: Metadata = {
   title: "DRMR Staking Dashboard",
-  description:
-    "$DRMR Staking dashboard, and portfolio health in one modern workspace.",
+  description: "Your american dream starts here.",
   icons: {
     icon: "/logo.jpg",
     shortcut: "/logo.jpg",
@@ -21,9 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className="antialiased"
-      >
+      <body className="antialiased">
         {/* Early error handler for browser extension conflicts */}
         <Script
           id="ethereum-error-handler"
