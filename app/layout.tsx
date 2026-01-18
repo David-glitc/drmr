@@ -4,8 +4,8 @@ import "./globals.css";
 import { AppProviders } from "../providers/app-providers";
 
 export const metadata: Metadata = {
-  title: "DRMR Staking Dashboard",
-  description: "Your american dream starts here.",
+  title: "American Dream Coin",
+  description: "Your American Dream starts here.",
   icons: {
     icon: "/logo.jpg",
     shortcut: "/logo.jpg",
