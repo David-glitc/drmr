@@ -223,14 +223,6 @@ export default function LandingPage() {
                 ></iframe>
               </div>
             </div>
-            <div className="mt-10 flex items-center justify-center gap-4">
-              <Link
-                href="/portfolio"
-                className="rounded-full border border-red-500/50 bg-red-500/20 px-6 py-3 text-base font-semibold text-red-300 transition hover:bg-red-500/30"
-              >
-                Connect Wallet to Get Started
-              </Link>
-            </div>
           </div>
         </div>
       </section>
@@ -420,14 +412,6 @@ export default function LandingPage() {
               Stop watching from the sidelines. Join the $DRMR movement and take
               control of your financial future today.
             </p>
-            <div className="mt-10 flex items-center justify-center gap-4">
-              <Link
-                href="/portfolio"
-                className="rounded-full border border-red-500/50 bg-red-500/20 px-6 py-3 text-base font-semibold text-red-300 transition hover:bg-red-500/30"
-              >
-                Connect Wallet to Get Started
-              </Link>
-            </div>
           </div>
         </div>
       </section>
@@ -471,14 +455,6 @@ export default function LandingPage() {
                   <a href="#community" className="hover:text-white transition">
                     Community
                   </a>
-                </li>
-                <li>
-                  <button
-                    onClick={connect}
-                    className="hover:text-white transition"
-                  >
-                    Connect
-                  </button>
                 </li>
               </ul>
             </div>
